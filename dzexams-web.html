@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DZExams Scraper v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0D1B2A;--surf:#132338;--card:#1A2E45;--brd:#1F3A54;--acc:#00C896;--blue:#0099CC;--txt:#E2EAF4;--mut:#7A9BBD;--red:#FF5A5F;--warn:#F0A500;--r:12px}
+[data-theme="light"]{--bg:#E8F0F8;--surf:#D6E4F0;--card:#FFFFFF;--brd:#B0C8DC;--acc:#007A5E;--blue:#006699;--txt:#1A2B3E;--mut:#5A7A94;--red:#CC3340;--warn:#C08000;--shadow:0 1px 4px rgba(0,0,0,.08)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+header{width:100%;padding:16px 20px 10px;text-align:center;border-bottom:1px solid var(--brd);background:linear-gradient(180deg,#0a1520,transparent)}
+header h1{font-size:clamp(1.2rem,3.5vw,1.8rem);font-weight:700;color:#fff}
+header h1 span{color:var(--acc)}
+header p{margin-top:3px;color:var(--mut);font-size:.78rem}
+.ar{font-family:'Amiri',serif;direction:rtl;display:inline-block}
+/* STEPPER */
+.stepper{display:flex;align-items:center;padding:14px 16px 0;width:100%;max-width:1000px;overflow-x:auto}
+.step{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:40px}
+.dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--brd);background:var(--surf);display:flex;align-items:center;justify-content:center;font-size:.63rem;font-weight:700;color:var(--mut);transition:all .3s;z-index:1}
+.step.active .dot{border-color:var(--acc);color:var(--acc);background:rgba(0,200,150,.1)}
+.step.done .dot{border-color:var(--acc);background:var(--acc);color:#0D1B2A}
+.step.done .dot::after{content:'✓';font-size:.7rem;font-weight:900}
+.step.done .dot span{display:none}
+.slabel{font-size:.54rem;color:var(--mut);text-align:center;line-height:1.3;max-width:52px}
+.step.active .slabel{color:var(--acc)}
+.sline{flex:1;height:2px;background:var(--brd);align-self:flex-start;margin-top:11px;min-width:8px;transition:background .3s}
+.sline.done{background:var(--acc)}
+/* MAIN */
+main{width:100%;max-width:1000px;padding:12px 13px 50px;flex:1}
+.panel{background:var(--card);border:1px solid var(--brd);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.ph{padding:10px 14px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px}
+.ph-ico{width:26px;height:26px;border-radius:6px;background:rgba(0,200,150,.12);display:flex;align-items:center;justify-content:center;color:var(--acc);flex-shrink:0;font-size:.82rem}
+.ph h2{font-size:.84rem;font-weight:600}
+.ph p{font-size:.66rem;color:var(--mut);margin-top:1px}
+.pb{padding:13px}
+/* GRID/CHIPS */
+.grid{display:grid;gap:5px;grid-template-columns:repeat(auto-fill,minmax(145px,1fr))}
+.opt{background:var(--surf);border:1px solid var(--brd);border-radius:7px;padding:8px 11px;cursor:pointer;text-align:left;color:var(--txt);font-family:'Inter',sans-serif;font-size:.75rem;transition:all .18s;display:flex;flex-direction:column;gap:2px}
+.opt:hover{border-color:var(--acc);background:rgba(0,200,150,.06)}
+.opt.sel{border-color:var(--acc);background:rgba(0,200,150,.12);color:#fff}
+.ofr{font-weight:500}
+.oar{font-family:'Amiri',serif;direction:rtl;font-size:.68rem;color:var(--mut)}
+.opt.sel .oar{color:rgba(255,255,255,.45)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px}
+.chip{background:var(--surf);border:1px solid var(--brd);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:.71rem;color:var(--mut);transition:all .18s;user-select:none}
+.chip:hover{border-color:var(--acc);color:var(--txt)}
+.chip.sel{background:rgba(0,200,150,.15);border-color:var(--acc);color:var(--acc);font-weight:600}
+.chip-all{border-style:dashed;border-color:rgba(0,200,150,.4);color:var(--acc)}
+.trim-group{margin-bottom:10px}
+.trim-label{font-size:.67rem;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.trim-label em{color:var(--acc);font-style:normal}
+/* FILIERE CARDS */
+.filiere-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:7px;margin-bottom:12px}
+.fil-card{background:var(--surf);border:2px solid var(--brd);border-radius:9px;padding:10px 13px;cursor:pointer;transition:all .2s;text-align:center}
+.fil-card:hover{border-color:var(--acc);background:rgba(0,200,150,.04)}
+.fil-card.sel{border-color:var(--acc);background:rgba(0,200,150,.12)}
+.fil-icon{font-size:1.3rem;margin-bottom:4px}
+.fil-name{font-size:.79rem;font-weight:600;color:var(--txt)}
+.fil-ar{font-family:'Amiri',serif;direction:rtl;font-size:.73rem;color:var(--mut);margin-top:2px}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;border:none;transition:all .18s}
+.btn-p{background:var(--acc);color:#0D1B2A}
+.btn-p:hover{opacity:.87;transform:translateY(-1px)}
+.btn-p:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-g{background:transparent;color:var(--mut);border:1px solid var(--brd)}
+.btn-g:hover{border-color:var(--mut);color:var(--txt)}
+.btn-red{background:rgba(255,90,95,.12);color:var(--red);border:1px solid rgba(255,90,95,.3)}
+.btn-red:hover{background:rgba(255,90,95,.22)}
+.brow{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+/* FILTER */
+.fsec{background:var(--surf);border:1px solid var(--brd);border-radius:9px;padding:11px 13px;margin-bottom:9px}
+.fsec h3{font-size:.76rem;font-weight:600;color:var(--acc);margin-bottom:8px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fld label{display:block;font-size:.67rem;color:var(--mut);margin-bottom:3px;font-weight:500}
+.fld input,.fld select{width:100%;background:var(--bg);border:1px solid var(--brd);border-radius:7px;color:var(--txt);font-family:'Inter',sans-serif;font-size:.76rem;padding:5px 9px;outline:none}
+.fld input:focus,.fld select:focus{border-color:var(--acc)}
+.fld input::placeholder{color:var(--mut)}
+/* CLOUD DESTINATION */
+.dest-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;margin-bottom:10px}
+.dest-card{background:var(--surf);border:2px solid var(--brd);border-radius:9px;padding:10px;cursor:pointer;text-align:center;transition:all .2s}
+.dest-card:hover{border-color:var(--acc)}
+.dest-card.sel{border-color:var(--acc);background:rgba(0,200,150,.1)}
+.dest-card .dico{font-size:1.4rem;margin-bottom:3px}
+.dest-card .dname{font-size:.76rem;font-weight:600}
+.dest-card .ddesc{font-size:.64rem;color:var(--mut)}
+/* ACCOUNT SELECTOR */
+.acc-panel{background:rgba(0,200,150,.04);border:1px solid rgba(0,200,150,.2);border-radius:9px;padding:11px 13px;margin-bottom:8px;display:none}
+.acc-panel.show{display:block}
+.acc-panel h4{font-size:.76rem;font-weight:600;color:var(--acc);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.acc-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.acc-chip{background:var(--surf);border:2px solid var(--brd);border-radius:8px;padding:6px 11px;cursor:pointer;font-size:.72rem;color:var(--mut);transition:all .18s;user-select:none}
+.acc-chip:hover{border-color:var(--acc)}
+.acc-chip.sel{border-color:var(--acc);background:rgba(0,200,150,.15);color:var(--acc);font-weight:600}
+.acc-chip .ac-email{display:block;font-size:.65rem;color:var(--mut);margin-top:1px}
+.acc-chip.sel .ac-email{color:rgba(0,200,150,.7)}
+.cloud-guide{background:#070f1a;border:1px solid var(--brd);border-radius:7px;padding:10px 12px;font-size:.71rem;color:var(--mut);line-height:1.7;margin-top:8px}
+.cloud-guide strong{color:var(--txt)}
+.cloud-guide a{color:var(--blue)}
+.cloud-guide code{background:rgba(0,200,150,.1);color:var(--acc);padding:1px 5px;border-radius:4px}
+.env-block{background:#070f1a;border:1px solid rgba(0,200,150,.2);border-radius:6px;padding:7px 10px;font-family:monospace;font-size:.7rem;color:var(--acc);margin:6px 0;line-height:1.9}
+.cstatus{font-size:.71rem;margin-bottom:6px}
+.ok{color:var(--acc)}.bad{color:var(--red)}.warn-txt{color:var(--warn)}
+/* RECAP */
+.recap{background:var(--surf);border:1px solid var(--brd);border-radius:9px;padding:10px 13px;display:grid;gap:5px;margin-bottom:10px}
+.rrow{display:flex;justify-content:space-between;font-size:.76rem;gap:8px}
+.rrow .k{color:var(--mut)}
+.rrow .v{font-weight:600;text-align:right}
+code{background:rgba(0,200,150,.1);color:var(--acc);padding:1px 5px;border-radius:4px;font-size:.7rem}
+/* LOG + STATS */
+.prog-bar{background:var(--brd);border-radius:99px;height:5px;margin-bottom:8px;overflow:hidden}
+.prog-fill{background:linear-gradient(90deg,var(--acc),var(--blue));height:100%;border-radius:99px;transition:width .4s;width:0%}
+.stats-row{display:flex;gap:7px;margin-bottom:9px;flex-wrap:wrap}
+.stat{background:var(--surf);border:1px solid var(--brd);border-radius:7px;padding:7px 11px;flex:1;min-width:75px;text-align:center}
+.stn{font-size:1.15rem;font-weight:700;color:var(--acc)}
+.stl{font-size:.61rem;color:var(--mut);margin-top:1px}
+.spin{animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:.68rem;font-weight:600}
+.badge-run{background:rgba(0,200,150,.15);color:var(--acc);border:1px solid rgba(0,200,150,.3)}
+.badge-stop{background:rgba(122,155,189,.1);color:var(--mut);border:1px solid var(--brd)}
+.log-panel{background:#070f1a;border:1px solid var(--brd);border-radius:9px;overflow:hidden;margin-bottom:9px}
+.log-header{padding:8px 12px;border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px}
+.log-header span{font-size:.76rem;font-weight:600}
+.log-body{height:280px;overflow-y:auto;padding:8px 12px;font-family:'Consolas','Courier New',monospace;font-size:.69rem;line-height:1.7}
+.ll{display:flex;gap:7px}
+.lt{color:#3a5570;flex-shrink:0;font-size:.63rem;margin-top:2px}
+.lm{flex:1;word-break:break-all}
+.lm.success{color:var(--acc)}.lm.error{color:var(--red)}.lm.warn{color:var(--warn)}.lm.info{color:#c8dde8}
+/* FILES TABLE */
+.files-table{width:100%;border-collapse:collapse;font-size:.69rem}
+.files-table th{text-align:left;padding:6px 9px;background:var(--surf);color:var(--mut);font-weight:600;border-bottom:1px solid var(--brd);position:sticky;top:0}
+.files-table td{padding:5px 9px;border-bottom:1px solid var(--brd);color:var(--txt)}
+.files-table tr:hover{background:rgba(0,200,150,.03)}
+.files-table a{color:var(--blue);text-decoration:none}
+.cloud-tag{display:inline-block;font-size:.62rem;padding:1px 5px;border-radius:10px;margin-right:2px}
+.tag-mega{background:rgba(255,90,95,.15);color:#ff8a8e}
+.tag-gdrive{background:rgba(240,200,0,.15);color:#e8c700}
+.tag-dropbox{background:rgba(0,153,204,.15);color:var(--blue)}
+[data-step]{display:none}[data-step].active{display:block}
+.theme-toggle{position:fixed;top:12px;right:14px;z-index:99;width:36px;height:36px;border-radius:50%;border:2px solid var(--brd);background:var(--surf);color:var(--txt);cursor:pointer;font-size:1.15rem;display:flex;align-items:center;justify-content:center;transition:all .25s;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.theme-toggle:hover{transform:scale(1.12);border-color:var(--acc)}
+.toolbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px}
+.toolbar .btn{font-size:.72rem;padding:5px 10px}
+.vbtn{background:var(--surf);border:1px solid var(--brd);border-radius:6px;padding:4px 9px;cursor:pointer;color:var(--mut);font-size:.68rem;transition:all .18s}
+.vbtn:hover{border-color:var(--acc);color:var(--txt)}
+.vbtn.act{border-color:var(--acc);color:var(--acc);background:rgba(0,200,150,.1)}
+/* DISCOVERED FILES */
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:5px;margin-bottom:8px}
+.rcard{background:var(--surf);border:1px solid var(--brd);border-radius:7px;padding:7px 9px;cursor:pointer;transition:all .18s}
+.rcard:hover{border-color:var(--acc)}
+.rcard.sel{border-color:var(--acc);background:rgba(0,200,150,.1)}
+.rcard .rt{font-size:.71rem;font-weight:600;color:var(--txt);margin-bottom:2px}
+.rcard .rm{font-size:.64rem;color:var(--mut)}
+.rcard .ry{font-size:.62rem;color:var(--mut)}.rcard .rsol{font-size:.62rem}
+.rcard.sel .rt{color:var(--acc)}.rcard.sel .rm{color:rgba(0,200,150,.7)}
+/* TABLE */
+.rtable{width:100%;border-collapse:collapse;font-size:.68rem;margin-bottom:8px}
+.rtable th{text-align:left;padding:5px 7px;background:var(--surf);color:var(--mut);font-weight:600;border-bottom:1px solid var(--brd);position:sticky;top:0;white-space:nowrap}
+.rtable td{padding:4px 7px;border-bottom:1px solid var(--brd);color:var(--txt);vertical-align:middle}
+.rtable tr{cursor:pointer}.rtable tr:hover{background:rgba(0,200,150,.03)}
+.rtable tr.sel{background:rgba(0,200,150,.08)}
+.rtable td:first-child{width:28px;text-align:center}
+/* PAGINATION */
+.pag{display:flex;align-items:center;gap:5px;justify-content:center;margin:6px 0}
+.pag button{background:var(--surf);border:1px solid var(--brd);border-radius:5px;padding:3px 9px;cursor:pointer;color:var(--txt);font-size:.68rem}
+.pag button:hover{border-color:var(--acc)}.pag button.act{background:var(--acc);color:#0D1B2A;border-color:var(--acc)}
+.pag span{font-size:.68rem;color:var(--mut)}.fbar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.fbar input,.fbar select{background:var(--bg);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-size:.68rem;padding:4px 8px;font-family:'Inter',sans-serif}
+.fbar input:focus,.fbar select:focus{border-color:var(--acc)}
+@media(max-width:520px){.grid{grid-template-columns:1fr 1fr}.fgrid{grid-template-columns:1fr}.dest-grid{grid-template-columns:1fr 1fr}.brow{flex-direction:column}}
+.site-picker{display:flex;gap:6px;justify-content:center;margin:6px 0 0}
+.site-btn{background:var(--surf);border:1px solid var(--brd);border-radius:20px;padding:3px 12px;cursor:pointer;color:var(--mut);font-size:.7rem;font-family:'Inter',sans-serif;transition:all .2s}
+.site-btn:hover{border-color:var(--acc);color:var(--txt)}
+.site-btn.active{background:rgba(0,200,150,.15);border-color:var(--acc);color:var(--acc);font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <h1>DZ<span>Exams</span> Scraper <span style="font-size:.7rem;color:var(--mut)">v5</span></h1>
+  <p><span class="ar">تحميل الفروض والاختبارات</span> — Découverte + Filtres + Cloud Multi-comptes</p>
+  <div class="site-picker">
+    <button class="site-btn active" data-site="dzexams" onclick="changerSite('dzexams',this)">DzExams</button>
+    <button class="site-btn" data-site="eddirasa" onclick="changerSite('eddirasa',this)">Eddirasa</button>
+    <button class="site-btn" data-site="ency" onclick="changerSite('ency',this)">Ency-Education</button>
+  </div>
+  <button class="theme-toggle" id="theme-toggle" aria-label="Basculer le thème">🌙</button>
+</header>
+
+<!-- STEPPER : 8 étapes -->
+<div class="stepper">
+  <div class="step active" id="s0"><div class="dot"><span>1</span></div><div class="slabel">Niveau</div></div>
+  <div class="sline" id="l1"></div>
+  <div class="step" id="s1"><div class="dot"><span>2</span></div><div class="slabel">Année</div></div>
+  <div class="sline" id="l2"></div>
+  <div class="step" id="s2"><div class="dot"><span>3</span></div><div class="slabel">Matières</div></div>
+  <div class="sline" id="l3"></div>
+  <div class="step" id="s3"><div class="dot"><span>4</span></div><div class="slabel">Filière</div></div>
+  <div class="sline" id="l4"></div>
+  <div class="step" id="s4"><div class="dot"><span>5</span></div><div class="slabel">Trimestres</div></div>
+  <div class="sline" id="l5"></div>
+  <div class="step" id="s5"><div class="dot"><span>6</span></div><div class="slabel">Filtres</div></div>
+  <div class="sline" id="l6"></div>
+  <div class="step" id="s6"><div class="dot"><span>7</span></div><div class="slabel">Destination</div></div>
+  <div class="sline" id="l7"></div>
+  <div class="step" id="s7"><div class="dot"><span>8</span></div><div class="slabel">Téléchargement</div></div>
+</div>
+
+<main>
+
+<!-- STEP 0 : NIVEAU -->
+<div data-step="0" class="active">
+  <div class="panel">
+    <div class="ph"><div class="ph-ico">🏫</div><div><h2>Niveau scolaire</h2><p><span class="ar">المرحلة الدراسية</span></p></div></div>
+    <div class="pb"><div class="grid" id="g0"></div><div class="brow"><button class="btn btn-p" id="b0" disabled onclick="goStep(1)">Continuer →</button></div></div>
+  </div>
+</div>
+
+<!-- STEP 1 : ANNÉE -->
+<div data-step="1">
+  <div class="panel">
+    <div class="ph"><div class="ph-ico">📅</div><div><h2>Année scolaire</h2><p><span class="ar">السنة الدراسية</span></p></div></div>
+    <div class="pb"><div class="grid" id="g1"></div><div class="brow"><button class="btn btn-g" onclick="goStep(0)">← Retour</button><button class="btn btn-p" id="b1" disabled onclick="goStep(2)">Continuer →</button></div></div>
+  </div>
+</div>
+
+<!-- STEP 2 : MATIÈRES -->
+<div data-step="2">
+  <div class="panel">
+    <div class="ph"><div class="ph-ico">📚</div><div><h2>Matières</h2><p><span class="ar">اختر مادة أو أكثر</span></p></div></div>
+    <div class="pb"><div class="chips" id="g2"></div><div class="brow"><button class="btn btn-g" onclick="goStep(1)">← Retour</button><button class="btn btn-p" id="b2" disabled onclick="nextAfterMats()">Continuer →</button></div></div>
+  </div>
+</div>
+
+<!-- STEP 3 : FILIÈRE (secondaire seulement) -->
+<div data-step="3">
+  <div class="panel">
+    <div class="ph"><div class="ph-ico">🎓</div><div><h2>Filière</h2><p><span class="ar">اختر الشعبة — للثانوي فقط</span> (1AS / 2AS / 3AS)</p></div></div>
+    <div class="pb">
+      <div class="filiere-grid" id="g3"></div>
+      <div style="font-size:.72rem;color:var(--mut);margin-bottom:10px">
+        ⓘ Les filières correspondent aux branches d'enseignement du secondaire sur dzexams.com.
+        Sélectionnez <strong>une seule filière</strong> par lancement (pour changer, relancez avec une autre filière).
+      </div>
+      <div class="brow"><button class="btn btn-g" onclick="goStep(2)">← Retour</button><button class="btn btn-p" id="b3" disabled onclick="goStep(4)">Continuer →</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 4 : TRIMESTRES & TYPES -->
+<div data-step="4">
+  <div class="panel">
+    <div class="ph"><div class="ph-ico">📂</div><div><h2>Trimestres & Types de documents</h2><p><span class="ar">الفصول وأنواع المستندات</span></p></div></div>
+    <div class="pb" id="cats-pb">
+      <div class="brow"><button class="btn btn-g" id="back-cats" onclick="backFromCats()">← Retour</button><button class="btn btn-p" id="b4" disabled onclick="goStep(5)">Continuer →</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 5 : FILTRES -->
+<div data-step="5">
+  <div class="panel">
+    <div class="ph"><div class="ph-ico">🔧</div><div><h2>Filtres & Options</h2><p><span class="ar">خيارات التصفية</span></p></div></div>
+    <div class="pb">
+      <div class="recap" id="recap5"></div>
+      <div class="fsec">
+        <h3>🗓 Année</h3>
+        <div class="fgrid">
+          <div class="fld"><label>Année unique (ex: 2024)</label><input type="text" id="f-year" placeholder="Vide = toutes"></div>
+          <div class="fld"><label>Plage (ex: 2020-2024)</label><input type="text" id="f-yearrange" placeholder="ex: 2020-2024"></div>
+        </div>
+      </div>
+      <div class="fsec">
+        <h3>✅ Correction & Limite</h3>
+        <div class="fgrid">
+          <div class="fld"><label>Correction</label>
+            <select id="f-sol">
+              <option value="all">Tous (avec et sans)</option>
+              <option value="with">Avec correction ✅</option>
+              <option value="without">Sans correction ❌</option>
+            </select>
+          </div>
+          <div class="fld"><label>Limite (fichiers/combo)</label><input type="number" id="f-limit" placeholder="Vide = tout" min="1"></div>
+        </div>
+      </div>
+      <div class="fsec">
+        <h3>⚙️ Options</h3>
+        <div class="fgrid">
+          <div class="fld"><label>Délai entre DL (sec)</label><input type="number" id="f-delay" value="1.5" min="0.5" max="10" step="0.5"></div>
+          <div class="fld"><label>Dossier local</label><input type="text" id="f-folder" value="downloads"></div>
+        </div>
+      </div>
+      <div id="discover-area" style="display:none">
+        <div class="fsec"><h3>🔍 Résultats de la découverte</h3>
+          <div class="toolbar">
+            <button class="btn btn-p" id="btn-discover" onclick="lancerDecouverte()">🔍 Découvrir les sujets</button>
+            <span id="disc-count" style="font-size:.7rem;color:var(--mut)"></span>
+            <div style="flex:1"></div>
+            <button class="vbtn act" id="vt-card" onclick="vueCartes()">▦ Cartes</button>
+            <button class="vbtn" id="vt-table" onclick="vueTable()">☰ Tableau</button>
+          </div>
+          <div class="fbar" id="fbar">
+            <input type="text" id="f-titre" placeholder="🔍 Filtre titre..." oninput="appliquerFiltres()" style="width:140px">
+            <select id="f-matiere" onchange="appliquerFiltres()" style="width:100px"><option value="">Matière</option></select>
+            <select id="f-trimestre" onchange="appliquerFiltres()" style="width:100px"><option value="">Trimestre</option></select>
+            <select id="f-corrige" onchange="appliquerFiltres()" style="width:100px"><option value="">Corrigé</option><option value="oui">Avec ✅</option><option value="non">Sans ❌</option></select>
+            <input type="number" id="f-annee-min" placeholder="Année min" oninput="appliquerFiltres()" style="width:85px" min="2000" max="2030">
+            <input type="number" id="f-annee-max" placeholder="Année max" oninput="appliquerFiltres()" style="width:85px" min="2000" max="2030">
+            <button class="btn btn-g" onclick="toutSelectionner()" style="font-size:.68rem">✓ Tout</button>
+            <button class="btn btn-g" onclick="toutDeselectionner()" style="font-size:.68rem">✗ Rien</button>
+          </div>
+          <div id="disc-log" class="log-box" style="max-height:150px;overflow:auto;font-size:.72rem;background:var(--bg2);border-radius:4px;padding:6px;margin-bottom:6px;display:none"></div>
+          <div id="disc-results"></div>
+          <div class="pag" id="pag-bar" style="display:none"></div>
+        </div>
+        <div class="brow">
+          <button class="btn btn-p" id="btn-dl-selected" onclick="telechargerSelectionnes()" disabled style="font-size:.72rem">📥 Télécharger sélection</button>
+          <button class="btn btn-g" id="btn-dl-zip" onclick="telechargerZipSelectionnes()" disabled style="font-size:.72rem">📦 ZIP sélection</button>
+        </div>
+      </div>
+      <div class="brow"><button class="btn btn-g" onclick="goStep(4)">← Retour</button><button class="btn btn-p" onclick="goStep(6)">Continuer →</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 6 : DESTINATION + COMPTES -->
+<div data-step="6">
+  <div class="panel">
+    <div class="ph"><div class="ph-ico">☁</div><div><h2>Destination & Comptes Cloud</h2><p><span class="ar">وجهة الملفات واختيار الحساب</span></p></div></div>
+    <div class="pb">
+      <div class="dest-grid">
+        <div class="dest-card sel" data-dest="local" onclick="selDest(this)"><div class="dico">💾</div><div class="dname">Local</div><div class="ddesc">Sur votre PC</div></div>
+        <div class="dest-card" data-dest="mega" onclick="selDest(this)"><div class="dico">🔴</div><div class="dname">MEGA</div><div class="ddesc">50 Go/compte</div></div>
+        <div class="dest-card" data-dest="gdrive" onclick="selDest(this)"><div class="dico">🟡</div><div class="dname">Google Drive</div><div class="ddesc">15 Go/compte</div></div>
+        <div class="dest-card" data-dest="dropbox" onclick="selDest(this)"><div class="dico">🔵</div><div class="dname">Dropbox</div><div class="ddesc">2 Go/compte</div></div>
+        <div class="dest-card" data-dest="all" onclick="selDest(this)"><div class="dico">🌐</div><div class="dname">Tous</div><div class="ddesc">Local + tous clouds</div></div>
+      </div>
+
+      <!-- MEGA comptes -->
+      <div class="acc-panel" id="ap-mega">
+        <h4>🔴 Comptes MEGA — Sélectionnez le(s) compte(s) à utiliser</h4>
+        <div class="acc-list" id="al-mega"><span class="warn-txt">Chargement...</span></div>
+        <div class="cloud-guide">
+          <strong>Configuration dans .env :</strong>
+          <div class="env-block">MEGA_EMAIL=compte1@email.com<br>MEGA_PASSWORD=motdepasse1<br>MEGA_FOLDER=/DZExams<br><br>MEGA_EMAIL_2=compte2@email.com<br>MEGA_PASSWORD_2=motdepasse2<br>MEGA_FOLDER_2=/DZExams_backup</div>
+          <strong>Installation :</strong> <code>pip install pycryptodome</code><br>
+          ⓘ Numérotez avec _2, _3... pour plusieurs comptes (jusqu'à 5).
+        </div>
+      </div>
+
+      <!-- GDRIVE comptes -->
+      <div class="acc-panel" id="ap-gdrive">
+        <h4>🟡 Comptes Google Drive — Sélectionnez le(s) compte(s)</h4>
+        <div class="acc-list" id="al-gdrive"><span class="warn-txt">Chargement...</span></div>
+        <div class="cloud-guide">
+          <strong>Étapes :</strong><br>
+          1. <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → créer projet → activer <strong>Google Drive API</strong><br>
+          2. Identifiants → OAuth 2.0 → Application bureau → télécharger JSON → renommer <code>credentials.json</code><br>
+          3. ⚠ Ajouter <code>http://localhost:8080</code> aux URI de redirection autorisés<br>
+          4. Placer <code>credentials.json</code> à côté de <code>dzexams_server.py</code><br>
+          <div class="env-block">GDRIVE_CREDENTIALS_FILE=credentials.json<br>GDRIVE_FOLDER_NAME=DZExams<br><br>GDRIVE_CREDENTIALS_FILE_2=credentials_2.json<br>GDRIVE_FOLDER_NAME_2=DZExams_2</div>
+          <strong>Installation :</strong> <code>pip install google-api-python-client google-auth-oauthlib</code>
+        </div>
+      </div>
+
+      <!-- DROPBOX comptes -->
+      <div class="acc-panel" id="ap-dropbox">
+        <h4>🔵 Comptes Dropbox — Sélectionnez le(s) compte(s)</h4>
+        <div class="acc-list" id="al-dropbox"><span class="warn-txt">Chargement...</span></div>
+        <div class="cloud-guide">
+          <strong>Étapes :</strong><br>
+          1. <a href="https://www.dropbox.com/developers/apps" target="_blank">dropbox.com/developers/apps</a> → Create app → Scoped access → Full Dropbox<br>
+          2. ⚠ Onglet <strong>Permissions</strong> → cocher <code>files.content.write</code> + <code>files.content.read</code> → Submit<br>
+          3. Onglet <strong>Settings</strong> → Generated access token → Generate (après avoir coché les permissions !)<br>
+          <div class="env-block">DROPBOX_ACCESS_TOKEN=sl.votre_token<br>DROPBOX_FOLDER=/DZExams<br><br>DROPBOX_ACCESS_TOKEN_2=sl.autre_token<br>DROPBOX_FOLDER_2=/DZExams_2</div>
+          <strong>Installation :</strong> <code>pip install dropbox</code>
+        </div>
+      </div>
+
+      <div class="brow"><button class="btn btn-g" onclick="goStep(5)">← Retour</button><button class="btn btn-p" onclick="goStep(7)">🚀 Démarrer →</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 7 : TÉLÉCHARGEMENT -->
+<div data-step="7">
+  <div class="panel">
+    <div class="ph">
+      <div class="ph-ico">📥</div>
+      <div style="flex:1"><h2>Téléchargement en direct</h2><p id="status-txt">Prêt</p></div>
+      <span class="badge badge-stop" id="status-badge">⏸ Arrêté</span>
+    </div>
+    <div class="pb">
+      <div class="recap" id="recap7"></div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+      <div class="stats-row">
+        <div class="stat"><div class="stn" id="st-ok" style="color:var(--acc)">0</div><div class="stl">💾 Téléchargés</div></div>
+        <div class="stat"><div class="stn" id="st-up" style="color:var(--blue)">0</div><div class="stl">☁ Uploadés</div></div>
+        <div class="stat"><div class="stn" id="st-fail" style="color:var(--red)">0</div><div class="stl">❌ Échoués</div></div>
+        <div class="stat"><div class="stn" id="st-total">0</div><div class="stl">Total</div></div>
+        <div class="stat" style="min-width:120px"><div class="stn" id="st-cur" style="font-size:.57rem;color:var(--mut);padding-top:4px;line-height:1.3">—</div><div class="stl">Fichier actuel</div></div>
+      </div>
+      <div class="log-panel">
+        <div class="log-header">
+          <span>📋 Journal en temps réel</span>
+          <div style="display:flex;gap:5px">
+            <button class="btn btn-g" style="padding:2px 7px;font-size:.68rem" onclick="clearLogs()">🗑</button>
+            <button class="btn btn-g" style="padding:2px 7px;font-size:.68rem" id="btn-as" onclick="toggleScroll()">📌 ON</button>
+          </div>
+        </div>
+        <div class="log-body" id="log-body"></div>
+      </div>
+      <!-- Tableau fichiers cloud -->
+      <div class="log-panel" id="files-panel" style="display:none">
+        <div class="log-header">
+          <span>📦 Fichiers traités</span>
+          <button class="btn btn-g" style="padding:2px 7px;font-size:.68rem" onclick="refreshFiles()">🔄</button>
+        </div>
+        <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
+          <table class="files-table" id="files-table">
+            <thead><tr><th>Fichier</th><th>Ko</th><th>Pages</th><th>Année</th><th>✅</th><th>Cloud</th><th>Lien</th></tr></thead>
+            <tbody id="files-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="brow" style="margin-top:6px">
+        <button class="btn btn-g" onclick="telechargerZipDossier()" id="btn-zip" style="font-size:.72rem" disabled>📦 Télécharger ZIP</button>
+      </div>
+      <div class="brow">
+        <button class="btn btn-p" id="btn-start" onclick="startDownload()">▶ Démarrer</button>
+        <button class="btn btn-red" id="btn-stop" onclick="stopDownload()" disabled>⏹ Arrêter</button>
+        <button class="btn btn-g" onclick="goStep(6)">← Destination</button>
+        <button class="btn btn-g" onclick="restart()">↺ Nouvelle config</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+// ═══════════════════════════════ DATA ═══════════════════════════════
+const LEVELS={
+  "Primaire":{"Classe Préparatoire":"0ap","1ère Année":"1ap","2ème Année":"2ap","3ème Année":"3ap","4ème Année":"4ap","5ème Année":"5ap","CINQ — BEP":"bep"},
+  "Moyen":{"1ère AM":"1am","2ème AM":"2am","3ème AM":"3am","4ème AM":"4am","BEM":"bem"},
+  "Secondaire":{"1ère AS":"1as","2ème AS":"2as","3ème AS":"3as","BAC":"bac"},
+};
+const SUBJECTS={
+  "0ap":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["tarbia-islamia","Éd. Islamique"]],
+  "1ap":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["tarbia-islamia","Éd. Islamique"]],
+  "2ap":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["tarbia-islamia","Éd. Islamique"]],
+  "3ap":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["tarbia-islamia","Éd. Islamique"],["tarbia-madania","Éd. Civique"],["tarbia-ilmia","Éveil Scient."]],
+  "4ap":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["tarbia-islamia","Éd. Islamique"],["tarbia-madania","Éd. Civique"],["tarbia-ilmia","Éveil Scient."],["histoire-geographie","Histoire & Géo"]],
+  "5ap":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["tarbia-islamia","Éd. Islamique"],["tarbia-madania","Éd. Civique"],["sciences","Sciences"],["technologie","Technologie"],["histoire-geographie","Histoire & Géo"]],
+  "bep":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["tarbia-islamia","Éd. Islamique"]],
+  "1am":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["sciences-naturelles","Sciences Nat."],["physique","Physique-Chimie"],["histoire-geographie","Histoire & Géo"],["tarbia-islamia","Éd. Islamique"],["tarbia-madania","Éd. Civique"]],
+  "2am":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["sciences-naturelles","Sciences Nat."],["physique","Physique-Chimie"],["histoire-geographie","Histoire & Géo"],["tarbia-islamia","Éd. Islamique"],["tarbia-madania","Éd. Civique"],["informatique","Informatique"]],
+  "3am":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["sciences-naturelles","Sciences Nat."],["physique","Physique-Chimie"],["histoire-geographie","Histoire & Géo"],["tarbia-islamia","Éd. Islamique"],["tarbia-madania","Éd. Civique"],["technologie","Technologie"]],
+  "4am":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["sciences-naturelles","Sciences Nat."],["physique","Physique-Chimie"],["histoire-geographie","Histoire & Géo"],["tarbia-islamia","Éd. Islamique"],["tarbia-madania","Éd. Civique"],["technologie","Technologie"],["informatique","Informatique"]],
+  "bem":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["sciences-naturelles","Sciences Nat."],["physique","Physique-Chimie"]],
+  "1as":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["physique","Physique-Chimie"],["sciences-naturelles","Sciences Nat."],["histoire-geographie","Histoire & Géo"],["tarbia-islamia","Éd. Islamique"],["philosophie","Philosophie"],["informatique","Informatique"]],
+  "2as":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["physique","Physique-Chimie"],["sciences-naturelles","Sciences Nat."],["histoire-geographie","Histoire & Géo"],["philosophie","Philosophie"],["informatique","Informatique"],["economie-gestion","Éco & Gestion"]],
+  "3as":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["physique","Physique-Chimie"],["sciences-naturelles","Sciences Nat."],["histoire-geographie","Histoire & Géo"],["philosophie","Philosophie"],["informatique","Informatique"],["economie-gestion","Éco & Gestion"]],
+  "bac":[["arabe","Langue Arabe"],["mathematiques","Mathématiques"],["francais","Français"],["anglais","Anglais"],["physique","Physique-Chimie"],["sciences-naturelles","Sciences Nat."],["histoire-geographie","Histoire & Géo"],["philosophie","Philosophie"],["informatique","Informatique"],["economie-gestion","Éco & Gestion"]],
+};
+// Filières secondaire avec icônes
+const FILIERES=[
+  {code:"as",fr:"Filières Scientifiques",ar:"الشعب العلمية",icon:"🔬",desc:"Tronc commun scientifique"},
+  {code:"se",fr:"Sciences Expérimentales",ar:"علوم تجريبية",icon:"🧪",desc:"Biologie, Géologie"},
+  {code:"lp",fr:"Lettres et Philosophie",ar:"آداب وفلسفة",icon:"📖",desc:"Filière littéraire"},
+  {code:"ge",fr:"Gestion et Économie",ar:"تسيير واقتصاد",icon:"📊",desc:"Économie, Comptabilité"},
+  {code:"tm",fr:"Techniques Mathématiques",ar:"تقني رياضي",icon:"📐",desc:"Mathématiques avancées"},
+];
+// Catégories selon cycle
+const CP=[{code:"t1",trim:"1",type:"dt",fr:"Devoirs & Compos — 1er Trim."},{code:"t2",trim:"2",type:"dt",fr:"Devoirs & Compos — 2ème Trim."},{code:"t3",trim:"3",type:"dt",fr:"Devoirs & Compos — 3ème Trim."},{code:"cours",trim:"",type:"cours",fr:"Cours et résumés"},{code:"exercices",trim:"",type:"ex",fr:"Activités et exercices"}];
+const CMS=[{code:"d1",trim:"1",type:"devoir",fr:"Devoirs — 1er Trim."},{code:"e1",trim:"1",type:"compo",fr:"Compositions — 1er Trim."},{code:"d2",trim:"2",type:"devoir",fr:"Devoirs — 2ème Trim."},{code:"e2",trim:"2",type:"compo",fr:"Compositions — 2ème Trim."},{code:"d3",trim:"3",type:"devoir",fr:"Devoirs — 3ème Trim."},{code:"e3",trim:"3",type:"compo",fr:"Compositions — 3ème Trim."},{code:"rattrapage",trim:"",type:"rattrapage",fr:"Rattrapage"},{code:"cours",trim:"",type:"cours",fr:"Cours et résumés"},{code:"pedagogie",trim:"",type:"peda",fr:"Pédagogie"}];
+const CE=[{code:"",trim:"",type:"officiel",fr:"Sujets officiels"},{code:"cours",trim:"",type:"cours",fr:"Cours et résumés"}];
+// Catégories secondaire (même que CMS mais avec préfixe filière)
+const CSEC=[...CMS,{code:"homeworks",trim:"",type:"dm",fr:"Devoirs de maison"},{code:"exercices",trim:"",type:"ex",fr:"Activités et exercices"}];
+
+// ═══════════════════════════════ STATE ═══════════════════════════════
+const S={site:'dzexams',nk:null,level:null,mats:[],filiere:'',cats:[],dest:'local',
+         selMegaAccs:[],selGDriveAccs:[],selDropboxAccs:[]};
+let evtSrc=null, autoScroll=true, processed=0;
+let envData={accounts:{mega:[],gdrive:[],dropbox:[]}};
+
+// ═══════════════════════════════ HELPERS ═══════════════════════════════
+const isPrim=()=>['0ap','1ap','2ap','3ap','4ap','5ap','bep'].includes(S.level);
+const isSec=()=>['1as','2as','3as'].includes(S.level);
+const isExam=()=>['bem','bac'].includes(S.level);
+function getCats(){return isExam()?CE:(isPrim()?CP:(isSec()?CSEC:CMS))}
+function selGrid(g,btn){g.querySelectorAll('.opt').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel')}
+
+// ═══════════════════════════════ SITE SELECTOR ═════════════════════
+function changerSite(site,btn){
+  document.querySelectorAll('.site-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  S.site=site; S.nk=null; S.level=null; S.mats=[]; S.filiere=''; S.cats=[];
+  document.getElementById('b0').disabled=true;
+  document.getElementById('b1').disabled=true;
+  document.getElementById('b2').disabled=true;
+  goStep(0);
+  chargerCyclesSite();
+}
+// ═══════════════════════════════ INIT ═══════════════════════════════
+async function chargerCyclesSite(){
+  var g=document.getElementById('g0'); g.innerHTML='<div style="text-align:center;padding:10px;color:var(--mut)">Chargement...</div>';
+  try{
+    var r=await fetch('/api/cycles?site='+S.site);
+    var data=await r.json();
+    g.innerHTML='';
+    Object.keys(data).forEach(function(nk){
+      var info=data[nk];
+      var lbl=info.label||nk;
+      g.appendChild(mkOpt(lbl,'',function(btn){
+        selGrid(g,btn); S.nk=nk; S.level=null; S.mats=[]; S.filiere=''; S.cats=[];
+        document.getElementById('b0').disabled=false; chargerNiveauxSite(nk,info.niveaux);
+      }));
+    });
+  }catch(e){
+    g.innerHTML='<div style="text-align:center;padding:10px;color:var(--red)">Erreur chargement cycles</div>';
+  }
+}
+async function chargerNiveauxSite(nk,niveaux){
+  var g=document.getElementById('g1'); g.innerHTML='';
+  Object.keys(niveaux).forEach(function(code){
+    var lbl=niveaux[code];
+    g.appendChild(mkOpt(lbl,'',function(btn){
+      selGrid(g,btn); S.level=code;
+      document.getElementById('b1').disabled=false;
+      if(S.site==='dzexams') buildMats(code);
+      else{var m=document.getElementById('g2'); m.innerHTML='<div style="text-align:center;padding:10px;color:var(--mut);font-size:.7rem">Toutes les matières seront explorées</div>'; S.mats=[]; document.getElementById('b2').disabled=false;}
+    }));
+  });
+}
+(function(){
+  chargerCyclesSite();
+  loadEnvConfig();
+})();
+
+function mkOpt(fr,ar,cb){
+  const b=document.createElement('button'); b.className='opt';
+  b.innerHTML=`<span class="ofr">${fr}</span>${ar?`<span class="oar">${ar}</span>`:''}`;
+  b.onclick=()=>cb(b); return b;
+}
+
+function buildYears(nk){
+  const g=document.getElementById('g1'); g.innerHTML='';
+  Object.entries(LEVELS[nk]).forEach(([lbl,code])=>{
+    g.appendChild(mkOpt(lbl,'',btn=>{
+      selGrid(g,btn); S.level=code;
+      document.getElementById('b1').disabled=false; buildMats(code);
+    }));
+  });
+}
+
+function buildMats(code){
+  const g=document.getElementById('g2'); g.innerHTML=''; S.mats=[];
+  const all=document.createElement('div'); all.className='chip chip-all'; all.textContent='✓ Tout';
+  all.onclick=()=>{
+    g.querySelectorAll('.chip[data-slug]').forEach(c=>{c.classList.add('sel');if(!S.mats.includes(c.dataset.slug))S.mats.push(c.dataset.slug)});
+    document.getElementById('b2').disabled=false;
+  };
+  g.appendChild(all);
+  (SUBJECTS[code]||[]).forEach(([slug,fr])=>{
+    const c=document.createElement('div'); c.className='chip'; c.dataset.slug=slug; c.textContent=fr;
+    c.onclick=()=>{c.classList.toggle('sel'); const i=S.mats.indexOf(slug); if(i>=0)S.mats.splice(i,1); else S.mats.push(slug); document.getElementById('b2').disabled=S.mats.length===0;};
+    g.appendChild(c);
+  });
+}
+
+function buildFilieres(){
+  const g=document.getElementById('g3'); g.innerHTML=''; S.filiere='';
+  FILIERES.forEach(f=>{
+    const d=document.createElement('div'); d.className='fil-card';
+    d.innerHTML=`<div class="fil-icon">${f.icon}</div><div class="fil-name">${f.fr}</div><div class="fil-ar">${f.ar}</div><div style="font-size:.62rem;color:var(--mut);margin-top:3px">${f.desc}</div>`;
+    d.onclick=()=>{
+      g.querySelectorAll('.fil-card').forEach(c=>c.classList.remove('sel'));
+      d.classList.add('sel'); S.filiere=f.code;
+      document.getElementById('b3').disabled=false;
+    };
+    g.appendChild(d);
+  });
+}
+
+function buildCats(){
+  const cats=getCats(); S.cats=[];
+  const pb=document.getElementById('cats-pb');
+  const btnRow=pb.querySelector('.brow'); pb.innerHTML='';
+  const ac=document.createElement('div'); ac.className='chip chip-all'; ac.style.marginBottom='9px';
+  ac.textContent='✓ Tout sélectionner';
+  ac.onclick=()=>{
+    pb.querySelectorAll('.chip[data-code]').forEach(c=>{c.classList.add('sel');if(!S.cats.includes(c.dataset.code))S.cats.push(c.dataset.code)});
+    document.getElementById('b4').disabled=false;
+  };
+  pb.appendChild(ac);
+  // Grouper par trimestre
+  const groups=isSec()||!isPrim()&&!isExam()
+    ? [['1','📅 1er Trimestre'],['2','📅 2ème Trimestre'],['3','📅 3ème Trimestre'],['','📁 Autres']]
+    : [['','']];
+  groups.forEach(([trim,label])=>{
+    const group=cats.filter(c=>c.trim===trim);
+    if(!group.length) return;
+    const div=document.createElement('div'); div.className='trim-group';
+    if(label){div.innerHTML=`<div class="trim-label"><em>${label}</em></div>`;}
+    const chips=document.createElement('div'); chips.className='chips';
+    group.forEach(c=>{
+      const chip=document.createElement('div'); chip.className='chip'; chip.dataset.code=c.code;
+      chip.textContent=c.fr;
+      chip.onclick=()=>{chip.classList.toggle('sel'); const i=S.cats.indexOf(c.code); if(i>=0)S.cats.splice(i,1); else S.cats.push(c.code); document.getElementById('b4').disabled=S.cats.length===0;};
+      chips.appendChild(chip);
+    });
+    div.appendChild(chips); pb.appendChild(div);
+  });
+  pb.appendChild(btnRow);
+}
+
+// ═══════════════════════════════ NAV ═══════════════════════════════
+function nextAfterMats(){
+  if(isSec()){buildFilieres(); goStep(3);}
+  else{buildCats(); goStep(4);}
+}
+function backFromCats(){
+  if(isSec()) goStep(3); else goStep(2);
+}
+
+function goStep(n){
+  document.querySelectorAll('[data-step]').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`[data-step="${n}"]`).classList.add('active');
+  for(let i=0;i<8;i++){
+    const el=document.getElementById(`s${i}`); if(!el) continue;
+    el.classList.remove('active','done');
+    if(i<n) el.classList.add('done'); else if(i===n) el.classList.add('active');
+  }
+  for(let i=1;i<=7;i++){const l=document.getElementById(`l${i}`); if(l)l.classList.toggle('done',i<=n);}
+  if(n===4 && isSec()) buildCats();
+  if(n===5){buildRecap5();prepDecouverte();}
+  if(n===7) prepDownload();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ═══════════════════════════════ CLOUD CONFIG ═══════════════════════════════
+async function loadEnvConfig(){
+  try{
+    const r=await fetch('/env'); if(!r.ok) return;
+    envData=await r.json();
+    const accs=envData.accounts||{mega:[],gdrive:[],dropbox:[]};
+    buildAccList('al-mega',accs.mega||[],'mega','🔴',a=>`${a.email}`);
+    buildAccList('al-gdrive',accs.gdrive||[],'gdrive','🟡',a=>`${a.folder} ${a.token_ok?'✅':'⚠ 1er lancement'}`);
+    buildAccList('al-dropbox',accs.dropbox||[],'dropbox','🔵',a=>`${a.folder}`);
+  }catch(e){}
+}
+
+function buildAccList(elId,accounts,cloud,icon,fmt){
+  const el=document.getElementById(elId); if(!el) return;
+  if(!accounts.length){el.innerHTML=`<span class="bad">❌ Aucun compte dans .env</span>`; return;}
+  el.innerHTML='';
+  accounts.forEach(a=>{
+    const chip=document.createElement('div'); chip.className='acc-chip'; chip.dataset.id=a.id;
+    chip.innerHTML=`${icon} Compte ${a.id}<span class="ac-email">${fmt(a)}</span>`;
+    chip.onclick=()=>{
+      chip.classList.toggle('sel');
+      var key={'mega':'selMegaAccs','gdrive':'selGDriveAccs','dropbox':'selDropboxAccs'}[cloud];
+      var idx=S[key]?S[key].indexOf(a.id):-1;
+      if(idx>=0) S[key].splice(idx,1); else S[key].push(a.id);
+    };
+    el.appendChild(chip);
+  });
+  // "Tous" chip
+  const all=document.createElement('div'); all.className='acc-chip chip-all';
+  all.textContent='✓ Tous';
+  all.onclick=()=>{
+    el.querySelectorAll('.acc-chip[data-id]').forEach(c=>{
+      if(!c.classList.contains('sel')){c.classList.add('sel');}
+    });
+    var key={'mega':'selMegaAccs','gdrive':'selGDriveAccs','dropbox':'selDropboxAccs'}[cloud];
+    if(S[key]) S[key]=accounts.map(a=>a.id);
+  };
+  el.appendChild(all);
+}
+
+function selDest(card){
+  document.querySelectorAll('.dest-card').forEach(c=>c.classList.remove('sel'));
+  card.classList.add('sel'); S.dest=card.dataset.dest;
+  const isMega=S.dest==='mega'||S.dest==='all';
+  const isGD=S.dest==='gdrive'||S.dest==='all';
+  const isDB=S.dest==='dropbox'||S.dest==='all';
+  document.getElementById('ap-mega').classList.toggle('show',isMega);
+  document.getElementById('ap-gdrive').classList.toggle('show',isGD);
+  document.getElementById('ap-dropbox').classList.toggle('show',isDB);
+}
+
+// ═══════════════════════════════ RECAP ═══════════════════════════════
+function buildRecap5(){
+  const cats=getCats();
+  const ml=S.mats.length?S.mats.map(slug=>{const s=(SUBJECTS[S.level]||[]).find(([sl])=>sl===slug);return s?s[1]:slug;}):['Toutes'];
+  const cl=S.cats.length?S.cats.map(code=>{const c=cats.find(c=>c.code===code);return c?c.fr:code;}):['Toutes'];
+  const filLbl=S.filiere?FILIERES.find(f=>f.code===S.filiere)?.fr||S.filiere:'—';
+  document.getElementById('recap5').innerHTML=`
+    <div class="rrow"><span class="k">Site</span><span class="v">${S.site}</span></div>
+    <div class="rrow"><span class="k">Niveau / Année</span><span class="v">${S.nk} — <code>${S.level}</code></span></div>
+    <div class="rrow"><span class="k">Filière</span><span class="v">${filLbl}</span></div>
+    <div class="rrow"><span class="k">Matières</span><span class="v">${ml.join(', ')}</span></div>
+    <div class="rrow"><span class="k">Catégories</span><span class="v">${cl.join(' | ')}</span></div>`;
+}
+
+function prepDownload(){
+  const cats=getCats();
+  const ml=S.mats.length?S.mats.map(slug=>{const s=(SUBJECTS[S.level]||[]).find(([sl])=>sl===slug);return s?s[1]:slug;}):['Toutes'];
+  const cl=S.cats.length?S.cats.map(code=>{const c=cats.find(c=>c.code===code);return c?c.fr:code;}):['Toutes'];
+  const filLbl=S.filiere?FILIERES.find(f=>f.code===S.filiere)?.fr||S.filiere:'—';
+  const destLabel={'local':'💾 Local','mega':'🔴 MEGA','gdrive':'🟡 GDrive','dropbox':'🔵 Dropbox','all':'🌐 Tous'}[S.dest]||S.dest;
+  document.getElementById('recap7').innerHTML=`
+    <div class="rrow"><span class="k">Site</span><span class="v">${S.site}</span></div>
+    <div class="rrow"><span class="k">Niveau/Filière</span><span class="v">${S.nk} <code>${S.level}</code> ${S.filiere?'— '+filLbl:''}</span></div>
+    <div class="rrow"><span class="k">Matières</span><span class="v">${ml.join(', ')}</span></div>
+    <div class="rrow"><span class="k">Catégories</span><span class="v">${cl.join(' | ')}</span></div>
+    <div class="rrow"><span class="k">Destination</span><span class="v">${destLabel}</span></div>`;
+  ['st-ok','st-up','st-fail','st-total'].forEach(id=>document.getElementById(id).textContent='0');
+  document.getElementById('st-cur').textContent='—';
+  document.getElementById('prog-fill').style.width='0%';
+  document.getElementById('log-body').innerHTML='';
+  document.getElementById('files-panel').style.display='none';
+  document.getElementById('status-txt').textContent='Prêt — cliquez Démarrer';
+  setBadge('stop'); processed=0;
+  document.getElementById('btn-start').disabled=false;
+  document.getElementById('btn-stop').disabled=true;
+}
+
+// ═══════════════════════════════ DOWNLOAD ═══════════════════════════════
+async function startDownload(){
+  const cats=getCats();
+  const combos=[];
+  for(const mat of S.mats){
+    for(const catCode of S.cats){
+      // Pour le secondaire, préfixer le code cat avec la filière
+      const realCat=isSec()&&S.filiere ? `${S.filiere}_${catCode}` : catCode;
+      const catObj=cats.find(c=>c.code===catCode);
+      combos.push({level:S.level,mat,cat:realCat,filiere:S.filiere||'',
+                   trim:catObj?.trim||'',type:catObj?.type||''});
+    }
+  }
+
+  const yrRange=document.getElementById('f-yearrange').value.trim();
+  const yrSingle=document.getElementById('f-year').value.trim();
+  const yr=yrRange||yrSingle||null;
+  const limVal=parseInt(document.getElementById('f-limit').value);
+  const solVal=document.getElementById('f-sol').value;
+  const config={
+    combos,
+    folder:document.getElementById('f-folder').value.trim()||'downloads',
+    delay:parseFloat(document.getElementById('f-delay').value)||1.5,
+    sol_filter:(solVal&&solVal!=='all')?solVal:null,
+    limit:isNaN(limVal)?null:limVal,
+    year_filter:yr,                    // null si vide — JAMAIS la chaîne "null"
+    destination:S.dest,
+    selected_mega:   S.selMegaAccs,
+    selected_gdrive: S.selGDriveAccs,
+    selected_dropbox:S.selDropboxAccs,
+    delete_after: false,
+  };
+
+  try{
+    const r=await fetch('/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
+    if(!r.ok){const e=await r.json(); addLog('❌ '+e.error,'error'); return;}
+  }catch(e){
+    addLog('❌ Serveur non disponible — lancez : python dzexams_server.py','error');
+    addLog('→ Puis ouvrez : http://localhost:5000','warn'); return;
+  }
+
+  document.getElementById('btn-start').disabled=true;
+  document.getElementById('btn-stop').disabled=false;
+  setBadge('run'); document.getElementById('status-txt').textContent='En cours...';
+
+  if(evtSrc) evtSrc.close();
+  evtSrc=new EventSource('/logs');
+  evtSrc.onmessage=e=>{
+    const d=JSON.parse(e.data); if(d.level==='ping') return;
+    addLog(d.msg,d.level,d.time);
+    if(d.msg.includes('Ko')&&d.msg.startsWith('💾')){incSt('st-ok');processed++;updTotal();}
+    if(d.msg.startsWith('☁')&&d.msg.includes('↑')){incSt('st-up');}
+    if(d.msg.startsWith('❌')&&!d.msg.includes('TERMINÉ')&&!d.msg.includes('Serveur')){incSt('st-fail');processed++;updTotal();}
+    if(d.msg.includes('🔗')&&!d.msg.includes('📋')){
+      document.getElementById('st-cur').textContent=d.msg.split('/').pop()?.slice(0,26)||'...';}
+    if(d.msg.includes('TERMINÉ')){
+      setBadge('stop'); document.getElementById('status-txt').textContent='✅ Terminé !';
+      document.getElementById('btn-start').disabled=false;
+      document.getElementById('btn-stop').disabled=true;
+      if(evtSrc){evtSrc.close();evtSrc=null;}
+      setTimeout(refreshFiles,1000);
+    }
+  };
+  evtSrc.onerror=()=>{if(evtSrc){evtSrc.close();evtSrc=null;}setTimeout(checkStatus,2000);};
+}
+
+function incSt(id){document.getElementById(id).textContent=parseInt(document.getElementById(id).textContent)+1;}
+function updTotal(){document.getElementById('st-total').textContent=processed;}
+
+async function checkStatus(){
+  try{const r=await fetch('/status'); const s=await r.json();
+    if(!s.running){setBadge('stop'); document.getElementById('btn-start').disabled=false;
+      document.getElementById('btn-stop').disabled=true;
+      document.getElementById('st-ok').textContent=s.total_ok;
+      document.getElementById('st-up').textContent=s.total_uploaded||0;
+      document.getElementById('st-fail').textContent=s.total_fail;}}catch(e){}
+}
+
+async function stopDownload(){
+  try{await fetch('/stop',{method:'POST'});}catch(e){}
+  setBadge('stop'); document.getElementById('status-txt').textContent='Arrêt...';
+  document.getElementById('btn-stop').disabled=true;
+  setTimeout(()=>document.getElementById('btn-start').disabled=false,2000);
+}
+
+async function refreshFiles(){
+  try{
+    const r=await fetch('/cloud-files'); const files=await r.json();
+    if(!files.length){document.getElementById('files-panel').style.display='none'; return;}
+    document.getElementById('files-panel').style.display='block';
+    document.getElementById('files-tbody').innerHTML=files.map(f=>{
+      const tags=(f.clouds||[]).map(c=>{
+        const cls=c.cloud==='MEGA'?'tag-mega':c.cloud==='GDrive'?'tag-gdrive':'tag-dropbox';
+        return `<span class="cloud-tag ${cls}">${c.cloud}[${c.account}]</span>`;
+      }).join('');
+      const links=(f.clouds||[]).filter(c=>c.url).map(c=>
+        `<a href="${c.url}" target="_blank">${c.cloud}↗</a>`).join(' ');
+      const fn=f.filename||''; 
+      return `<tr><td title="${fn}">${fn.length>32?fn.slice(0,32)+'…':fn}</td>
+        <td>${f.size_kb}</td><td>${f.pages||'—'}</td><td>${f.year}</td>
+        <td>${f.has_sol?'✅':'❌'}</td><td>${tags||'💾'}</td><td>${links||'—'}</td></tr>`;
+    }).join('');
+  }catch(e){}
+}
+
+function addLog(msg,level='info',time=''){
+  const body=document.getElementById('log-body');
+  const t=time||new Date().toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  body.innerHTML+=`<div class="ll"><span class="lt">${t}</span><span class="lm ${level}">${esc(msg)}</span></div>`;
+  if(autoScroll) body.scrollTop=body.scrollHeight;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function clearLogs(){document.getElementById('log-body').innerHTML='';}
+function toggleScroll(){autoScroll=!autoScroll; document.getElementById('btn-as').textContent=`📌 ${autoScroll?'ON':'OFF'}`;}
+function setBadge(st){
+  const b=document.getElementById('status-badge');
+  if(st==='run'){b.className='badge badge-run';b.innerHTML='<span class="spin">⟳</span> En cours';}
+  else{b.className='badge badge-stop';b.innerHTML='⏸ Arrêté';}
+}
+// ═══════════════════════════════ THEME ═══════════════════════════════
+(function(){
+  const saved=localStorage.getItem('educ_theme');
+  if(saved==='light'){document.documentElement.setAttribute('data-theme','light');document.getElementById('theme-toggle').textContent='☀️';}
+})();
+document.getElementById('theme-toggle').addEventListener('click',function(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='light'?null:'light';
+  if(next){document.documentElement.setAttribute('data-theme','light');this.textContent='☀️';localStorage.setItem('educ_theme','light');}
+  else{document.documentElement.removeAttribute('data-theme');this.textContent='🌙';localStorage.setItem('educ_theme','dark');}
+});
+
+// ═══════════════════════════════ DISCOVERY ═══════════════════════════════
+var _dernieresFiches=[], _fichesFiltrees=[], _vueActuelle='cartes', _pageCourante=1, _pageSize=50, _dernierDossier='';
+
+function prepDecouverte(){
+  document.getElementById('discover-area').style.display='block';
+  document.getElementById('btn-discover').disabled=false;
+  document.getElementById('disc-results').innerHTML='<div style="text-align:center;padding:20px;color:var(--mut)">Cliquez sur « Découvrir les sujets » pour lister les sujets disponibles</div>';
+  _dernieresFiches=[]; _fichesFiltrees=[];
+}
+
+async function lancerDecouverte(){
+  var btn=document.getElementById('btn-discover'); btn.disabled=true; btn.textContent='⏳ Recherche...';
+  document.getElementById('disc-results').innerHTML='<div style="text-align:center;padding:20px"><span class="spin" style="font-size:1.4rem">⟳</span><br><span style="color:var(--mut)">Découverte en cours...</span></div>';
+  _dernieresFiches=[]; _fichesFiltrees=[];
+  var logEl=document.getElementById('disc-log'); logEl.innerHTML=''; logEl.style.display='block';
+
+  var matieres=S.mats.length?S.mats:[];
+  try{
+    var resp=await fetch('/api/decouvrir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      site:S.site,cycle:S.nk,niveau:S.level,matieres:matieres
+    })});
+    var data=await resp.json();
+    var jobId=data.job_id; if(!jobId) throw Error('Pas de job_id');
+
+    // SSE for logs + polling for completion
+    var es=new EventSource('/api/stream/'+jobId);
+    es.addEventListener('log',function(e){
+      try{var d=JSON.parse(e.data);if(d.msg){logEl.innerHTML+='<div>'+esc(d.msg)+'</div>';logEl.scrollTop=logEl.scrollHeight;}}catch(_){}
+    });
+    es.onerror=function(){};
+
+    // Poll for completion (runs every 2s)
+    var jobData=null;
+    while(true){
+      await new Promise(function(r){setTimeout(r,2000);});
+      var jr=await fetch('/api/job/'+jobId).then(function(r){return r.json()});
+      if(jr.status!=='running'){jobData=jr;break;}
+    }
+    es.close();
+
+    btn.disabled=false; btn.textContent='🔍 Découvrir les sujets';
+    if(jobData.error){
+      logEl.innerHTML+='<div style="color:var(--red)">✗ Erreur: '+esc(jobData.error)+'</div>';
+      document.getElementById('disc-results').innerHTML='<div style="text-align:center;padding:20px;color:var(--red)">✗ Erreur: '+esc(jobData.error)+'</div>';
+      return;
+    }
+    var fiches=jobData.result&&jobData.result.fiches;
+    if(fiches&&fiches.length){
+      _dernieresFiches=fiches;
+      document.getElementById('disc-count').textContent=fiches.length+' sujet(s) trouvé(s)';
+      appliquerFiltres();
+      var mats={}, tris={};
+      fiches.forEach(function(f){
+        if(f.matiere) mats[f.matiere]=true;
+        if(f.trimestre) tris[f.trimestre]=true;
+      });
+      remplirSelect('f-matiere',Object.keys(mats).sort());
+      remplirSelect('f-trimestre',Object.keys(tris).sort());
+      document.getElementById('btn-dl-selected').disabled=true;
+      document.getElementById('btn-dl-zip').disabled=true;
+    }else{
+      document.getElementById('disc-results').innerHTML='<div style="text-align:center;padding:20px;color:var(--warn)">Aucun sujet trouvé</div>';
+    }
+  }catch(err){
+    console.error('decouverte error:',err);
+    btn.disabled=false; btn.textContent='🔍 Découvrir les sujets';
+    document.getElementById('disc-results').innerHTML='<div style="text-align:center;padding:20px;color:var(--red)">✗ Erreur: '+esc(err&&err.message||err||'inconnue')+'</div>';
+  }
+}
+
+function remplirSelect(id,vals){
+  var sel=document.getElementById(id); if(!sel) return;
+  var cur=sel.value; sel.innerHTML='<option value="">'+(id==='f-matiere'?'Matière':'Trimestre')+'</option>';
+  vals.forEach(function(v){
+    var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
+  });
+  sel.value=cur;
+}
+
+var _checkedMap={};
+function appliquerFiltres(){
+  var titre=(document.getElementById('f-titre').value||'').toLowerCase();
+  var matiere=document.getElementById('f-matiere').value;
+  var trimestre=document.getElementById('f-trimestre').value;
+  var corrige=document.getElementById('f-corrige').value;
+  var anMin=parseInt(document.getElementById('f-annee-min').value);
+  var anMax=parseInt(document.getElementById('f-annee-max').value);
+
+  _fichesFiltrees=_dernieresFiches.filter(function(f){
+    if(titre&&!(f.titre||'').toLowerCase().includes(titre)&&!(f.matiere||'').toLowerCase().includes(titre)) return false;
+    if(matiere&&f.matiere!==matiere) return false;
+    if(trimestre&&String(f.trimestre)!==trimestre) return false;
+    if(corrige==='oui'&&!f.corrige) return false;
+    if(corrige==='non'&&f.corrige) return false;
+    if(anMin&&f.annee&&parseInt(f.annee)<anMin) return false;
+    if(anMax&&f.annee&&parseInt(f.annee)>anMax) return false;
+    return true;
+  });
+  _pageCourante=1;
+  renderResults();
+}
+
+function renderResults(){
+  var total=_fichesFiltrees.length;
+  var debut=(_pageCourante-1)*_pageSize;
+  var page=_fichesFiltrees.slice(debut,debut+_pageSize);
+  var totalPages=Math.ceil(total/_pageSize)||1;
+  var container=document.getElementById('disc-results');
+
+  if(_vueActuelle==='cartes') renderCartes(container,page);
+  else renderTable(container,page);
+
+  // Pagination
+  var pag=document.getElementById('pag-bar');
+  if(totalPages<=1){pag.style.display='none'; return;}
+  pag.style.display='flex';
+  var html='<button onclick="changerPage('+(_pageCourante-1)+')" '+( _pageCourante<=1?'disabled':'')+'>‹</button>';
+  for(var i=Math.max(1,_pageCourante-2);i<=Math.min(totalPages,_pageCourante+2);i++){
+    html+='<button class="'+(i===_pageCourante?'act':'')+'" onclick="changerPage('+i+')">'+i+'</button>';
+  }
+  html+='<button onclick="changerPage('+(_pageCourante+1)+')" '+(_pageCourante>=totalPages?'disabled':'')+' disabled>›</button>';
+  html+='<span>'+total+' résultat(s)</span>';
+  pag.innerHTML=html;
+}
+
+function renderCartes(container,page){
+  if(!page.length){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--mut)">Aucun résultat</div>'; return;}
+  var html='<div class="rgrid">';
+  page.forEach(function(f,i){
+    var key=f.fiche_url||f.titre||i;
+    var sel=_checkedMap[key]?' sel':'';
+    html+='<div class="rcard'+sel+'" data-key="'+esc(key)+'" onclick="toggleFiche(this,\''+esc(key)+'\')">'+
+      '<div class="rt">'+esc(f.titre||'')+'</div>'+
+      '<div class="rm">'+esc(f.matiere||'')+'</div>'+
+      '<div class="rm">'+(f.filiere?esc(f.filiere)+' — ':'')+esc(f.trimestre||'')+'</div>'+
+      '<div class="ry">'+(f.annee||'')+'</div>'+
+      '<div class="rsol">'+(f.corrige?'✅ Corrigé':'❌ Non corrigé')+'</div></div>';
+  });
+  html+='</div>'; container.innerHTML=html;
+  majBtnSelection();
+}
+
+function renderTable(container,page){
+  if(!page.length){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--mut)">Aucun résultat</div>'; return;}
+  var html='<table class="rtable"><thead><tr><th>#</th><th>Titre</th><th>Matière</th><th>Filière</th><th>Trimestre</th><th>Année</th><th>Corrigé</th><th>Type</th></tr></thead><tbody>';
+  page.forEach(function(f,i){
+    var key=f.fiche_url||f.titre||i;
+    var sel=_checkedMap[key]?' sel':'';
+    html+='<tr class="'+sel+'" data-key="'+esc(key)+'" onclick="toggleFiche(this,\''+esc(key)+'\')">'+
+      '<td><input type="checkbox"'+(sel?' checked':'')+' onclick="event.stopPropagation();toggleFiche(this.closest(\'tr\'),\''+esc(key)+'\')"></td>'+
+      '<td>'+esc(f.titre||'')+'</td>'+
+      '<td>'+esc(f.matiere||'')+'</td>'+
+      '<td>'+esc(f.filiere||'—')+'</td>'+
+      '<td>'+esc(f.trimestre||'')+'</td>'+
+      '<td>'+(f.annee||'')+'</td>'+
+      '<td>'+(f.corrige?'✅':'❌')+'</td>'+
+      '<td>'+esc(f.type||'')+'</td></tr>';
+  });
+  html+='</tbody></table>'; container.innerHTML=html;
+  majBtnSelection();
+}
+
+function toggleFiche(el,key){
+  if(_checkedMap[key]){delete _checkedMap[key]; el.classList.remove('sel'); el.querySelector('input[type=checkbox]')&&(el.querySelector('input[type=checkbox]').checked=false);}
+  else{_checkedMap[key]=true; el.classList.add('sel'); el.querySelector('input[type=checkbox]')&&(el.querySelector('input[type=checkbox]').checked=true);}
+  majBtnSelection();
+}
+
+function majBtnSelection(){
+  var count=Object.keys(_checkedMap).length;
+  document.getElementById('btn-dl-selected').disabled=count===0;
+  document.getElementById('btn-dl-zip').disabled=count===0;
+}
+
+function toutSelectionner(){
+  _fichesFiltrees.forEach(function(f){
+    var key=f.fiche_url||f.titre;
+    _checkedMap[key]=true;
+  });
+  renderResults();
+}
+
+function toutDeselectionner(){
+  _checkedMap={}; renderResults();
+}
+
+function changerPage(n){
+  var totalPages=Math.ceil(_fichesFiltrees.length/_pageSize)||1;
+  if(n<1||n>totalPages) return;
+  _pageCourante=n; renderResults();
+  document.getElementById('disc-results').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function vueCartes(){_vueActuelle='cartes';document.getElementById('vt-card').classList.add('act');document.getElementById('vt-table').classList.remove('act');renderResults();}
+function vueTable(){_vueActuelle='table';document.getElementById('vt-table').classList.add('act');document.getElementById('vt-card').classList.remove('act');renderResults();}
+
+// ═══════════════════════════════ DOWNLOAD SELECTED ═══════════════════════════════
+function telechargerSelectionnes(){
+  var fiches=_dernieresFiches.filter(function(f){
+    return _checkedMap[f.fiche_url||f.titre];
+  });
+  if(!fiches.length) return;
+  lancerTelechargement(fiches,false);
+}
+
+function telechargerZipSelectionnes(){
+  var fiches=_dernieresFiches.filter(function(f){
+    return _checkedMap[f.fiche_url||f.titre];
+  });
+  if(!fiches.length) return;
+  lancerTelechargement(fiches,true);
+}
+
+async function lancerTelechargement(fiches,doZip){
+  var dossier='educ_'+S.level+'_'+Date.now();
+  _dernierDossier=dossier;
+  var provider=null,compte=null;
+  var dest=S.dest||'local';
+  var cloudAccts={'mega':S.selMegaAccs,'gdrive':S.selGDriveAccs,'dropbox':S.selDropboxAccs};
+  if(dest!=='local'&&dest!=='all'){
+    var list=cloudAccts[dest]||[];
+    if(list.length){provider=dest; compte=list[0];}
+  }
+
+  document.getElementById('btn-dl-selected').disabled=true;
+  document.getElementById('btn-dl-zip').disabled=true;
+
+  try{
+    var resp=await fetch('/api/telecharger',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      site:S.site,fiches:fiches,dossier:dossier,provider:provider,compte:compte,
+      dest:dest,selected_mega:S.selMegaAccs,selected_gdrive:S.selGDriveAccs,selected_dropbox:S.selDropboxAccs
+    })});
+    var data=await resp.json();
+    var jobId=data.job_id;
+    if(!jobId){addLog('❌ Erreur création job','error'); return;}
+    goStep(7); prepDownload();
+
+    var es=new EventSource('/api/stream/'+jobId);
+    es.addEventListener('log',function(e){
+      try{var d=JSON.parse(e.data);if(d.msg) addLog(d.msg,'info');}catch(_){}
+    });
+    es.addEventListener('progress',function(e){
+      try{var d=JSON.parse(e.data);
+      if(d.phase==='download'){
+        document.getElementById('st-ok').textContent=d.ok||0;
+        document.getElementById('st-fail').textContent=d.err||0;
+      }}catch(_){}
+    });
+    es.onerror=function(){};
+    setBadge('run'); document.getElementById('status-txt').textContent='Téléchargement...';
+
+    // Poll for completion
+    var jobData=null;
+    while(true){
+      await new Promise(function(r){setTimeout(r,2000);});
+      var jr=await fetch('/api/job/'+jobId).then(function(r){return r.json()});
+      if(jr.status!=='running'){jobData=jr;break;}
+    }
+    es.close();
+
+    if(jobData.error){addLog('✗ '+jobData.error,'error');}
+    if(jobData.result){
+      var r=jobData.result;
+      addLog('🏁 Terminé: '+r.ok+' OK, '+r.err+' échecs','success');
+      document.getElementById('st-ok').textContent=r.ok||0;
+      document.getElementById('st-fail').textContent=r.err||0;
+      document.getElementById('btn-zip').disabled=false;
+      if(doZip){
+        setTimeout(function(){telechargerZipDossier();},500);
+      }
+    }
+    setBadge('stop'); document.getElementById('status-txt').textContent='✅ Terminé';
+    document.getElementById('btn-start').disabled=false;
+    document.getElementById('btn-stop').disabled=true;
+  }catch(err){
+    addLog('✗ '+err,'error');
+  }
+}
+
+// ═══════════════════════════════ ZIP ═══════════════════════════════
+function telechargerZipDossier(){
+  var dossier=_dernierDossier;
+  if(!dossier){addLog('⚠ Aucun dossier à zipper','warn'); return;}
+  addLog('📦 Création ZIP...');
+  fetch('/api/zip/'+encodeURIComponent(dossier)+'?cleanup=1').then(function(r){return r.json()}).then(function(d){
+    if(d.ok){
+      addLog('📦 ZIP créé: '+d.nom,'success');
+      window.open('/downloads/'+dossier+'/'+d.nom,'_blank');
+    }else addLog('✗ Erreur ZIP: '+(d.error||'inconnue'),'error');
+  }).catch(function(e){addLog('✗ Erreur ZIP: '+e,'error');});
+}
+
+function restart(){
+  Object.assign(S,{nk:null,level:null,mats:[],filiere:'',cats:[],dest:'local',
+    selMegaAccs:[],selGDriveAccs:[],selDropboxAccs:[]});
+  document.querySelectorAll('.opt,.chip,.fil-card,.acc-chip').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('.dest-card').forEach(c=>c.classList.remove('sel'));
+  document.querySelector('.dest-card[data-dest="local"]').classList.add('sel');
+  ['b0','b1','b2','b3','b4'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});
+  if(evtSrc){evtSrc.close();evtSrc=null;}
+  goStep(0);
+}
+</script>
+</body>
+</html>

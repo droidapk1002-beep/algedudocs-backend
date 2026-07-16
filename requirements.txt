@@ -1,0 +1,17 @@
+flask>=3.0
+gunicorn>=21.2
+requests>=2.31
+python-dotenv>=1.0
+pycryptodome>=3.20
+pypdf>=4.0
+beautifulsoup4>=4.12
+lxml>=5.0
+playwright>=1.40
+tenacity>=8.0.0
+mega.py>=1.0.8
+dropbox>=11.36
+msal>=1.28
+google-api-python-client>=2.100
+google-auth>=2.25
+google-auth-oauthlib>=1.2
+google-auth-httplib2>=0.2
