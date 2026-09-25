@@ -7,7 +7,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 from bs4 import BeautifulSoup
 
-from .utils import slugify, detecter_annee, detecter_filiere, detecter_trimestre, chemin_sur, ecrire_manifeste, LABELS_TRIMESTRE, USER_AGENT, job_manager
+from .utils import slugify, detecter_annee, detecter_filiere, detecter_trimestre, chemin_sur, ecrire_manifeste, fetch_html, LABELS_TRIMESTRE, USER_AGENT, job_manager
 
 BASE = "https://www.dzexams.com"
 SOUS_PAGES_TRIM = ["t1", "t2", "t3", "acquis", "homeworks"]
@@ -27,9 +27,7 @@ def _session():
     return _HTTP_SESSION
 
 def _http_get(url, timeout=15):
-    r = _session().get(url, timeout=timeout)
-    r.raise_for_status()
-    return r.text
+    return fetch_html(url, timeout=timeout, session=_session())
 
 CYCLES = {
     "primaire": {

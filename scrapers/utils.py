@@ -2,6 +2,7 @@
 #  utils.py — Fonctions partagées par tous les scrapers (DzExams, Eddirasa, Ency)
 # =============================================================================
 
+import os
 import re
 import time
 import uuid
@@ -299,3 +300,128 @@ def safe_dest_path(racine: Path, *parts) -> Path:
 USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
               "AppleWebKit/537.36 (KHTML, like Gecko) "
               "Chrome/124.0.0.0 Safari/537.36")
+
+# ── Récupération HTML : cache + chaîne de repli anti-403 ────────────
+# dzexams.com est derrière Cloudflare, qui renvoie 403 aux IP de datacenter
+# (Render, Railway, VPS…). Depuis une IP résidentielle la même requête passe.
+# `fetch_html` essaie donc dans l'ordre : direct, miroir Cloudflare Worker,
+# relais jina. Le résultat est mis en cache TTL pour ménager dzexams.com.
+
+RELAYS = {
+    "jina": "https://r.jina.ai/{url}",
+}
+
+_html_cache = {}
+_html_cache_lock = threading.Lock()
+
+
+def _env(nom, defaut=""):
+    return os.getenv(nom, defaut).strip()
+
+
+def _cache_ttl():
+    try:
+        return max(0, int(_env("DZEXAMS_CACHE_TTL", "1800")))
+    except ValueError:
+        return 1800
+
+
+_relay_sess = None
+
+
+def _relay_session():
+    """Session dédiée aux relais. jina.ai (et les proxies du même type) refusent
+    les requêtes qui usurpent un User-Agent de navigateur : ils répondent 403.
+    On s'identifie donc honnêtement comme le backend."""
+    global _relay_sess
+    if _relay_sess is None:
+        import requests
+        _relay_sess = requests.Session()
+        _relay_sess.headers.update({
+            "User-Agent": "algedudocs-backend/1.0 "
+                          "(+https://github.com/droidapk1002-beep/algedudocs-backend)",
+        })
+    return _relay_sess
+
+
+def _miroir_fetch(url, timeout):
+    """Miroir Cloudflare Worker (recommandé) : il doit renvoyer le HTML brut
+    de dzexams. Voir worker/dzexams-mirror.js. Renvoie None si non configuré."""
+    base = _env("DZEXAMS_MIRROR")
+    if not base:
+        return None
+    r = _relay_session().get(base.rstrip("/") + "/" + url, timeout=timeout + 10)
+    r.raise_for_status()
+    return r.text
+
+
+def _relay_fetch(url, timeout):
+    provider = _env("DZEXAMS_RELAY", "jina").lower()
+    gabarit = RELAYS.get(provider)
+    if not gabarit:
+        return None
+    headers = {"X-Return-Format": "html"}
+    cle = _env("JINA_API_KEY")
+    if cle:
+        headers["Authorization"] = f"Bearer {cle}"
+    r = _relay_session().get(gabarit.format(url=url), timeout=timeout + 20,
+                             headers=headers)
+    r.raise_for_status()
+    return r.text
+
+
+def fetch_html(url, timeout=20, session=None):
+    """Renvoie le HTML de `url`. Si Cloudflare bloque l'IP de l'hôte (403), on
+    bascule sur le miroir Worker puis le relais jina. Les échecs remontent tels
+    quels afin que l'appelant affiche la cause réelle."""
+    import requests
+
+    ttl = _cache_ttl()
+    if ttl:
+        with _html_cache_lock:
+            entree = _html_cache.get(url)
+            if entree and time.time() - entree[0] < ttl:
+                return entree[1]
+
+    if session is None:
+        session = requests.Session()
+    session.headers.update({"User-Agent": USER_AGENT})
+    proxy = _env("DZEXAMS_PROXY")
+    if proxy:
+        session.proxies.update({"http": proxy, "https": proxy})
+
+    erreurs = []
+
+    for tentative in range(2):
+        try:
+            r = session.get(url, timeout=timeout)
+            r.raise_for_status()
+            return _memo(url, r.text, ttl)
+        except requests.RequestException as e:
+            erreurs.append(e)
+            if tentative == 0:
+                time.sleep(2)
+
+    for etape in (_miroir_fetch, _relay_fetch):
+        for tentative in range(2):
+            try:
+                html = etape(url, timeout)
+            except requests.RequestException as e:
+                erreurs.append(e)
+                if tentative == 0:
+                    time.sleep(2)
+                continue
+            if html:
+                return _memo(url, html, ttl)
+            break
+
+    raise erreurs[0]
+
+
+def _memo(url, html, ttl):
+    if ttl:
+        with _html_cache_lock:
+            if len(_html_cache) > 512:
+                _html_cache.clear()
+            _html_cache[url] = (time.time(), html)
+    return html

@@ -7,3 +7,13 @@ services:
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: DZEXAMS_CACHE_TTL
+        value: "1800"
+      - key: DZEXAMS_RELAY
+        value: jina
+      # Miroir Cloudflare Worker (recommandé) : voir worker/README.md
+      # - key: DZEXAMS_MIRROR
+      #   value: https://dzexams-mirror.<subdomain>.workers.dev
+      # Proxy résidentiel facultatif si vous en avez un :
+      # - key: DZEXAMS_PROXY
+      #   value: http://user:pass@host:port
