@@ -11,10 +11,29 @@ Preuve : le backend répond `200` sur `/api/cycles/dzexams` (aucune requête
 dzexams), mais le job `/api/matieres` échoue avec
 `403 Client Error: Forbidden for url: https://www.dzexams.com/fr/2as`.
 
+## Le second problème : l'aperçu des PDF
+
+Les PDF de `/uploads/sujets/*.pdf` exigent un en-tête
+**`Referer: https://www.dzexams.com/`**. Vérifié :
+
+| Requête | Résultat |
+|---|---|
+| PDF sans Referer | `403` |
+| PDF avec `Referer: dzexams.com` | `200` + `%PDF-` |
+| PDF avec `Referer: blogspot.com` | `403` |
+
+Une redirection 302 depuis le blog envoie un Referer blogspot : le navigateur
+aurait donc lui aussi obtenu un 403. Le PDF doit être **servi** par le Worker,
+qui ajoute le bon Referer en amont. C'est ce que fait ce Worker, et
+`/api/resolve-pdf` redirige vers lui quand `DZEXAMS_MIRROR` est défini.
+
+**Sans le Worker, l'icône 👁 ne peut pas fonctionner.** La découverte et le
+téléchargement, eux, fonctionnent grâce au relais.
+
 ## La solution : un Worker qui relaie depuis l'edge Cloudflare
 
-Une IP Cloudflare n'est pas bloquée par Cloudflare. Ce Worker récupère la page,
-la met en cache, et la sert au backend. Gratuit, sans limite de débit.
+Une IP Cloudflare n'est pas bloquée par Cloudflare. Ce Worker récupère la page
+ou le PDF, la met en cache, et la sert au backend. Gratuit, sans limite de débit.
 
 ## Mise en place
 
@@ -56,6 +75,14 @@ la met en cache, et la sert au backend. Gratuit, sans limite de débit.
 - Les relais (jina, proxies) **refusent les User-Agents qui usurpent un
   navigateur** (403). Le code s'identifie donc honnêtement comme
   `algedudocs-backend/1.0` auprès des relais. C'est volontaire.
-- Le Worker n'accepte que `dzexams.com` et `dzexams.com` (sans www).
+- Le Worker n'accepte que `dzexams.com` et `www.dzexams.com` (sans www).
+- **En-têtes de cache** : `CACHE_TTL_HTML` = 1 h, `CACHE_TTL_PDF` = 24 h
+  (en tête de fichier). Le PDF peut être volumineux : si le cache le refuse,
+  le Worker sert quand même la réponse.
+- Vérifier que le miroir répond pour un PDF :
+  ```bash
+  curl -I "https://<worker>/https://www.dzexams.com/uploads/sujets/xxx.pdf"
+  ```
+  Attendu : `200`, `Content-Type: application/pdf`.
 - Alternative plus radicale si le miroir ne suffit pas : changer d'hébergement
   (VPS, ou chez vous avec un tunnel Cloudflare).

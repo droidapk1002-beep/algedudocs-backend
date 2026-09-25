@@ -1,4 +1,4 @@
-import json, threading, webbrowser, uuid, zipfile, shutil, time, re
+import json, os, threading, webbrowser, uuid, zipfile, shutil, time, re
 from pathlib import Path
 from urllib.parse import urljoin
 
@@ -7,10 +7,9 @@ from flask import Flask, render_template, request, jsonify, Response, send_from_
 import config
 import cloud_upload
 from scrapers import SITES, get_site
-from scrapers.utils import job_manager, USER_AGENT
+from scrapers.utils import job_manager, fetch_html
 from scrapers.clean_pdf import clean_pdf_file
 import logging
-import requests as http_req
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
@@ -524,10 +523,8 @@ def api_telecharger_zip(dossier):
 
 def _resoudre_pdf_dzexams(url):
     try:
-        r = http_req.get(url, timeout=15, headers={"User-Agent": USER_AGENT, "Accept-Language": "ar,fr;q=0.9"})
-        if r.status_code != 200:
-            return None
-        soup = BeautifulSoup(r.text, "html.parser")
+        html = fetch_html(url, timeout=20)
+        soup = BeautifulSoup(html, "html.parser")
         selectors = ["a#actions-download[href]", "a[href$='.pdf']", "a[href*='.pdf?']", "a[href*='/download']"]
         for sel in selectors:
             a = soup.select_one(sel)
@@ -543,10 +540,8 @@ def _resoudre_pdf_ency(url):
     if url.lower().endswith(".pdf"):
         return url
     try:
-        r = http_req.get(url, timeout=15, headers={"User-Agent": USER_AGENT})
-        if r.status_code != 200:
-            return None
-        soup = BeautifulSoup(r.text, "html.parser")
+        html = fetch_html(url, timeout=20)
+        soup = BeautifulSoup(html, "html.parser")
         for a in soup.find_all("a", href=True):
             h = a["href"].lower()
             if h.endswith(".pdf") or ".pdf?" in h:
@@ -564,10 +559,8 @@ def _resoudre_pdf_eddirasa(url):
     if url.lower().endswith(".pdf"):
         return url
     try:
-        r = http_req.get(url, timeout=15, headers={"User-Agent": USER_AGENT})
-        if r.status_code != 200:
-            return None
-        soup = BeautifulSoup(r.text, "html.parser")
+        html = fetch_html(url, timeout=20)
+        soup = BeautifulSoup(html, "html.parser")
         for a in soup.find_all("a", href=True):
             h = a["href"]
             if "wp-content/uploads" in h and h.lower().endswith(".pdf"):
@@ -579,6 +572,16 @@ def _resoudre_pdf_eddirasa(url):
         return None
     except Exception:
         return None
+
+
+def _via_miroir(url_pdf):
+    """Passe l'URL du PDF par le miroir Cloudflare Worker. Indispensable : les
+    PDF de dzexams exigent un Referer dzexams.com, donc une redirection 302
+    depuis le blog se ferait bloquer en 403. Le Worker sert le PDF lui-même."""
+    base = os.environ.get("DZEXAMS_MIRROR", "").strip()
+    if not base:
+        return url_pdf
+    return base.rstrip("/") + "/" + url_pdf
 
 
 @app.route("/api/resolve-pdf")
@@ -594,8 +597,9 @@ def api_resolve_pdf():
     else:
         pdf_url = _resoudre_pdf_dzexams(url)
     if pdf_url:
-        return redirect(pdf_url, code=302)
-    return jsonify({"error": "PDF introuvable", "url": url}), 404
+        return redirect(_via_miroir(pdf_url), code=302)
+    return jsonify({"error": "PDF introuvable", "url": url,
+                    "conseil": "verifiez que DZEXAMS_MIRROR est configure sur Render"}), 404
 
 
 if __name__ == "__main__":
