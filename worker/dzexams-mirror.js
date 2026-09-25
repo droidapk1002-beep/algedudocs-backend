@@ -30,7 +30,7 @@ const UA =
 function corsHeaders(request) {
   const origin = request.headers.get('Origin') || '';
   return {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGIN.includes(origin) ? origin : ALLOWED_ORIGIN,
+    'Access-Control-Allow-Origin': origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
