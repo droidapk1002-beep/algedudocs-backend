@@ -344,10 +344,20 @@ def _relay_session():
     return _relay_sess
 
 
+MIRROR_DEFAUT = "https://dzexams-mirror.droidapk1002.workers.dev"
+
+
+def _miroir_base():
+    """URL du miroir. La variable d'environnement permet de le remplacer, mais
+    une valeur par défaut est fournie pour que la configuration fonctionne
+    sans manipulation dans le tableau de bord Render."""
+    return _env("DZEXAMS_MIRROR") or MIRROR_DEFAUT
+
+
 def _miroir_fetch(url, timeout):
     """Miroir Cloudflare Worker (recommandé) : il doit renvoyer le HTML brut
     de dzexams. Voir worker/dzexams-mirror.js. Renvoie None si non configuré."""
-    base = _env("DZEXAMS_MIRROR")
+    base = _miroir_base()
     if not base:
         return None
     r = _relay_session().get(base.rstrip("/") + "/" + url, timeout=timeout + 10)

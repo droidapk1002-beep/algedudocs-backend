@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, jsonify, Response, send_from_
 import config
 import cloud_upload
 from scrapers import SITES, get_site
-from scrapers.utils import job_manager, fetch_html
+from scrapers.utils import job_manager, fetch_html, MIRROR_DEFAUT
 from scrapers.clean_pdf import clean_pdf_file
 import logging
 from bs4 import BeautifulSoup
@@ -578,7 +578,7 @@ def _via_miroir(url_pdf):
     """Passe l'URL du PDF par le miroir Cloudflare Worker. Indispensable : les
     PDF de dzexams exigent un Referer dzexams.com, donc une redirection 302
     depuis le blog se ferait bloquer en 403. Le Worker sert le PDF lui-même."""
-    base = os.environ.get("DZEXAMS_MIRROR", "").strip()
+    base = os.environ.get("DZEXAMS_MIRROR", "").strip() or MIRROR_DEFAUT
     if not base:
         return url_pdf
     return base.rstrip("/") + "/" + url_pdf
