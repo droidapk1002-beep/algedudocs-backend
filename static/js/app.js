@@ -335,7 +335,10 @@ async function lancerDecouverte() {
         return;
       }
       state.fiches = (jobData.result && jobData.result.fiches) || [];
-      state.fichesSelectionnees = new Set(state.fiches.map(function (_, i) { return i; }));
+      // Aucune selection par defaut : le choix reste a l'utilisateur.
+      // La case "tout cocher" commande exactement ce qui sera telecharge,
+      // donc pre-cocher tout telechargerait toute la liste sans demande.
+      state.fichesSelectionnees = new Set();
       afficherFiches();
     },
   });
@@ -444,7 +447,10 @@ function rendreTableau() {
       "<tbody>" + rows + "</tbody>" +
     "</table>";
 
-  var toutesCochees = state.fichesFiltrees.every(function (f) {
+  // Garde sur fichesFiltrees.length : "every" sur un tableau vide renvoie
+  // true, donc sans cette condition la case "tout cocher" s'afficherait
+  // cochee alors qu'aucun sujet n'est selectionne.
+  var toutesCochees = state.fichesFiltrees.length > 0 && state.fichesFiltrees.every(function (f) {
     return state.fichesSelectionnees.has(state.fiches.indexOf(f));
   });
   document.querySelector("#check-all").checked = toutesCochees;
@@ -524,7 +530,7 @@ function rendreCartes() {
 
   wrap.innerHTML = '<div class="fc-grid">' + cards + "</div>";
 
-  var toutesCochees = state.fichesFiltrees.every(function (f) {
+  var toutesCochees = state.fichesFiltrees.length > 0 && state.fichesFiltrees.every(function (f) {
     return state.fichesSelectionnees.has(state.fiches.indexOf(f));
   });
 

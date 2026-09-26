@@ -313,6 +313,23 @@ if not hasattr(_asyncio, "coroutine"):
 _mega_instances = {}
 
 
+def _mega_raison_echec(exc):
+    """Traduit l'échec de connexion MEGA en cause lisible.
+
+    La bibliotheque leve un JSONDecodeError car l'API renvoie un corps vide.
+    Ce corps vide n'est pas un mot de passe faux : on a verifie qu'un compte
+    inexistant renvoie exactement la meme reponse. MEGA refuse donc la demande
+    avant de consulter le compte, ce que l'utilisateur ne peut pas corriger
+    depuis les variables d'environnement.
+    """
+    if isinstance(exc, json.JSONDecodeError) or "JSONDecode" in type(exc).__name__:
+        return ("Mega a refuse la connexion (reponse HTTP 402 vide). "
+                "Mega bloque l'acces a son API, le compte n'est pas en cause : "
+                "verifiez que vous pouvez vous connecter sur mega.nz dans un "
+                "navigateur, ou utilisez un autre compte de stockage.")
+    return f"Connexion Mega impossible : {exc}"
+
+
 def _mega_get_client(compte, nom_compte):
     if nom_compte in _mega_instances:
         return _mega_instances[nom_compte]
@@ -327,7 +344,7 @@ def _upload_mega(compte, fichiers, racine_locale, nom_dossier_distant, log, nom_
     try:
         client = _mega_get_client(compte, nom_compte)
     except Exception as e:
-        log(f"☁ ✗ Connexion Mega ({nom_compte}) impossible : {e}")
+        log(f"☁ ✗ {_mega_raison_echec(e)}")
         return {"ok": 0, "err": len(fichiers), "provider": "mega", "compte": nom_compte, "fichiers": []}
 
     cache = {}
@@ -410,6 +427,10 @@ def _dropbox_get_client(compte, nom_compte):
         return _dropbox_instances[nom_compte]
     import dropbox
     dbx = dropbox.Dropbox(compte["access_token"])
+    # Le constructeur ne valide pas le jeton : sans cet appel, l'erreur
+    # n'apparait qu'a mi-parcours de l'envoi, apres avoir deja cree des
+    # dossiers. On verifie donc des maintenant pour echouer tot et clairement.
+    dbx.users_get_current_account()
     _dropbox_instances[nom_compte] = dbx
     return dbx
 
@@ -418,7 +439,14 @@ def _upload_dropbox(compte, fichiers, racine_locale, nom_dossier_distant, log, n
     try:
         dbx = _dropbox_get_client(compte, nom_compte)
     except Exception as e:
-        log(f"☁ ✗ Connexion Dropbox ({nom_compte}) impossible : {e}")
+        if "invalid_access_token" in str(e) or "AuthError" in type(e).__name__:
+            raison = ("le jeton d'acces Dropbox est invalide, revoque ou expire. "
+                      "Generez-en un nouveau dans la console Dropbox "
+                      "(App Console > votre app > Generate token) et mettez-le a jour "
+                      "dans les variables d'environnement.")
+        else:
+            raison = f"Connexion Dropbox impossible : {e}"
+        log(f"☁ ✗ Dropbox : {raison}")
         return {"ok": 0, "err": len(fichiers), "provider": "dropbox", "compte": nom_compte, "fichiers": []}
 
     ok = err = 0
