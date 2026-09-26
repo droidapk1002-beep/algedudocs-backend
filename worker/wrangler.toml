@@ -1,0 +1,7 @@
+name = "dzexams-mirror"
+main = "dzexams-mirror.js"
+compatibility_date = "2026-09-01"
+
+# Le Worker est un relais public vers dzexams.com uniquement.
+# Aucune variable d'environnement n'est necessaire : ALLOWED_ORIGIN est
+# defini en dur dans dzexams-mirror.js.
