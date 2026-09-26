@@ -5,15 +5,97 @@ services:
     plan: free
     dockerfilePath: Dockerfile
     envVars:
+      # ------------------------------------------------------------------
+      # Configuration applicative (valeurs versionnees, non secretes)
+      # ------------------------------------------------------------------
       - key: FLASK_ENV
         value: production
       - key: DZEXAMS_CACHE_TTL
         value: "1800"
       - key: DZEXAMS_RELAY
         value: jina
-      # Miroir Cloudflare Worker (recommandé) : voir worker/README.md
+      - key: CLOUD_AUTO_UPLOAD
+        value: "false"
+
+      # Le miroir Cloudflare Worker a une valeur par defaut dans le code
+      # (scrapers/utils.py -> MIRROR_DEFAUT). Il n'est donc pas necessaire
+      # ici. Pour le remplacer par un autre miroir, decommentez et
+      # adaptez, ou definez la variable dans le dashboard.
       # - key: DZEXAMS_MIRROR
       #   value: https://dzexams-mirror.<subdomain>.workers.dev
-      # Proxy résidentiel facultatif si vous en avez un :
+
+      # Proxy residentiel facultatif si vous en avez un :
       # - key: DZEXAMS_PROXY
       #   value: http://user:pass@host:port
+
+      # ------------------------------------------------------------------
+      # Comptes cloud
+      #
+      # `sync: false` = Render ne gere PAS la valeur : vous la saisissez
+      # une seule fois dans le dashboard (Environment) et elle y reste.
+      # C'est obligatoire ici : ce depot est public, donc aucune valeur
+      # secrete ne doit etre ecrite dans ce fichier.
+      #
+      # Rendido -> Environment -> Add, puis Manual Deploy.
+      #
+      # Les noms de variables ci-dessous correspondent a ceux de votre
+      # fichier .env local : recopiez les valeurs telles quelles.
+      # Les variables *_ACCOUNT_LABEL servent uniquement a nommer les
+      # comptes dans l'interface (sinon le nom du compte est l'email).
+      # ------------------------------------------------------------------
+
+      # --- MEGA, compte 1 ---
+      - key: MEGA_ACCOUNT_LABEL
+        sync: false
+      - key: MEGA_EMAIL
+        sync: false
+      - key: MEGA_PASSWORD
+        sync: false
+      - key: MEGA_FOLDER
+        sync: false
+
+      # --- MEGA, compte 2 ---
+      - key: MEGA_ACCOUNT_LABEL_2
+        sync: false
+      - key: MEGA_EMAIL_2
+        sync: false
+      - key: MEGA_PASSWORD_2
+        sync: false
+      - key: MEGA_FOLDER_2
+        sync: false
+
+      # --- MEGA, compte 3 ---
+      - key: MEGA_ACCOUNT_LABEL_3
+        sync: false
+      - key: MEGA_EMAIL_3
+        sync: false
+      - key: MEGA_PASSWORD_3
+        sync: false
+      - key: MEGA_FOLDER_3
+        sync: false
+
+      # --- Dropbox ---
+      - key: DROPBOX_ACCOUNT_LABEL
+        sync: false
+      - key: DROPBOX_ACCESS_TOKEN
+        sync: false
+      - key: DROPBOX_FOLDER
+        sync: false
+
+      # ------------------------------------------------------------------
+      # Google Drive : volontairement absent.
+      #
+      # OAuth exige un consentement interactif dans un navigateur, et le
+      # token est ecrit dans token_cache_gdrive_<compte>.json. Sur Render le
+      # systeme de fichiers est ephemere : le token serait perdu a chaque
+      # redeploiement. Utilisez MEGA ou Dropbox, qui s'authentifient par
+      # identifiant direct et n'ont aucun etat a conserver.
+      #
+      # OneDrive est possible de la meme facon (appareil) si un jour vous en
+      # avez besoin :
+      # - key: ONEDRIVE_ACCOUNTS
+      #   sync: false
+      # - key: ONEDRIVE_PRINCIPAL_CLIENT_ID
+      #   sync: false
+      # - key: ONEDRIVE_PRINCIPAL_TENANT
+      #   sync: false
