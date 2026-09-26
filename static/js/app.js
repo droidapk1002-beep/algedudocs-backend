@@ -1032,7 +1032,8 @@ document.addEventListener("click", function (e) {
 
       fetch("/api/cloud/google/auth?compte=" + encodeURIComponent(compte))
         .then(function (r) { return r.json(); })
-        .then(function () {
+        .then(function (d) {
+          if (d.url) window.open(d.url, "cloud-oauth", "width=500,height=600,left=200,top=100");
           var poll = setInterval(function () {
             fetch("/api/cloud/google/auth-status/" + encodeURIComponent(compte))
               .then(function (r) { return r.json(); })

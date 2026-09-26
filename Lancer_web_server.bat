@@ -9,7 +9,7 @@ echo.
 REM === Installer les dépendances ===
 echo [1/3] Verification des dependances...
 
-pip install flask requests python-dotenv pycryptodome pypdf
+pip install flask requests python-dotenv pycryptodome pypdf beautifulsoup4 lxml
 pip install google-api-python-client google-auth-oauthlib google-auth-httplib2
 pip install mega.py==1.0.6 --no-deps
 pip install "tenacity>=8.0.0"

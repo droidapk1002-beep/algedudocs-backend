@@ -381,10 +381,14 @@ def api_google_auth():
         auth_url = _generer_auth_url_gdrive(compte, compte_nom)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    webbrowser.open(auth_url)
+    # On renvoie l'URL au navigateur du visiteur : c'est le JS qui ouvre la
+    # popup. Appeler webbrowser.open() ici est sans effet sur un serveur, et
+    # la fenêtre s'ouvrirait sur la machine qui heberge l'app, pas chez
+    # l'utilisateur.
     return jsonify({
         "compte": compte_nom,
-        "message": "Une fenêtre navigateur s'ouvre pour l'authentification Google. "
+        "url": auth_url,
+        "message": "Ouvrez la fenêtre d'authentification Google. "
                    "Après autorisation, retournez au dashboard.",
     })
 

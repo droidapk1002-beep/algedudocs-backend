@@ -485,9 +485,7 @@ def api_google_auth():
         url=_url_gdrive(compte,compte_nom)
     except Exception as e:
         return jsonify({"error":str(e)}),500
-    import webbrowser
-    webbrowser.open(url)
-    return jsonify({"compte":compte_nom,"message":"Fenêtre ouverte pour l'auth Google."})
+    return jsonify({"compte":compte_nom,"url":url,"message":"Fenêtre d'authentification Google à ouvrir."})
 
 @app.route("/api/cloud/google/callback")
 def api_google_callback():
